@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>মাছ হিসাব - Matsya Hisab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2>🐟 মাছ হিসাব</h2>
+            <p>Professional Accounting</p>
+        </div>
+        <ul class="nav-menu">
+            <li class="nav-item active">
+                <a href="#" data-page="dashboard" class="nav-link">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">ড্যাশবোর্ড</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" data-page="daily" class="nav-link">
+                    <span class="nav-icon">📝</span>
+                    <span class="nav-text">দৈনিক খরচ</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" data-page="monthly" class="nav-link">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-text">মাসিক রিপোর্ট</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" data-page="yearly" class="nav-link">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">বাৎসরিক হিসাব</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" data-page="invoice" class="nav-link">
+                    <span class="nav-icon">🧾</span>
+                    <span class="nav-text">ইনভয়েজ তৈরি</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" data-page="export" class="nav-link">
+                    <span class="nav-icon">💾</span>
+                    <span class="nav-text">এক্সপোর্ট</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Dashboard Page -->
+        <div id="dashboard" class="page active">
+            <div class="page-header">
+                <h1>ড্যাশবোর্ড</h1>
+                <p>আপনার ব্যবসার আজকের সারসংক্ষেপ</p>
+            </div>
+            
+            <div class="dashboard-cards">
+                <div class="card">
+                    <div class="card-icon">💰</div>
+                    <div class="card-content">
+                        <h3>আজকের খরচ</h3>
+                        <div class="card-value" id="today-expense">৳ 0</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📊</div>
+                    <div class="card-content">
+                        <h3>এই মাসের খরচ</h3>
+                        <div class="card-value" id="month-expense">৳ 0</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon">📈</div>
+                    <div class="card-content">
+                        <h3>বছরের মোট খরচ</h3>
+                        <div class="card-value" id="year-expense">৳ 0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="recent-entries">
+                <h2>সাম্প্রতিক এন্ট্রি</h2>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>তারিখ</th>
+                                <th>বিভাগ</th>
+                                <th>আইটেম</th>
+                                <th>টাকা</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-entries-body">
+                            <!-- Recent entries will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Entry Page -->
+        <div id="daily" class="page">
+            <div class="page-header">
+                <h1>দৈনিক খরচ এন্ট্রি</h1>
+                <p>আজকের খরচের তথ্য প্রবেশ করান</p>
+            </div>
+
+            <form id="daily-form" class="entry-form">
+                <div class="form-group">
+                    <label for="entry-date">তারিখ</label>
+                    <input type="date" id="entry-date" required>
+                </div>
+
+                <!-- Packaging Materials Section -->
+                <div class="form-section">
+                    <h3>প্যাকেজিং সামগ্রী</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="cork-sheet">ককশীট</label>
+                            <input type="number" id="cork-sheet" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="polythene">পলি</label>
+                            <input type="number" id="polythene" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="tape">টেপ</label>
+                            <input type="number" id="tape" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="marker">মার্কার</label>
+                            <input type="number" id="marker" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="banana-leaves">কলাপাতা</label>
+                            <input type="number" id="banana-leaves" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage Materials Section -->
+                <div class="form-section">
+                    <h3>সংরক্ষণ সামগ্রী</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ice">বরফ</label>
+                            <input type="number" id="ice" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Labor Costs Section -->
+                <div class="form-section">
+                    <h3>শ্রমিক খরচ</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="workers">শ্রমিক</label>
+                            <input type="number" id="workers" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="worker-transport">শ্রমিক যাতায়াত ভাড়া</label>
+                            <input type="number" id="worker-transport" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="tips">বকশিস</label>
+                            <input type="number" id="tips" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="worker-snacks">শ্রমিক নাস্তা</label>
+                            <input type="number" id="worker-snacks" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transportation Section -->
+                <div class="form-section">
+                    <h3>পরিবহন খরচ</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="fish-van">গাড়ি ভাড়া মাছ আনা</label>
+                            <input type="number" id="fish-van" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="ice-van">গাড়ি ভাড়া বরফ আনা</label>
+                            <input type="number" id="ice-van" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="bft-van">গাড়ি ভাড়া BFT</label>
+                            <input type="number" id="bft-van" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Expenses Section -->
+                <div class="form-section">
+                    <h3>অন্যান্য খরচ</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="miscellaneous">অন্যান্য</label>
+                            <input type="number" id="miscellaneous" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                        <div class="form-group">
+                            <label for="shed-cost">শেড খরচ</label>
+                            <input type="number" id="shed-cost" min="0" step="0.01" placeholder="টাকার পরিমাণ">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Display -->
+                <div class="total-display">
+                    <h3>মোট খরচ: <span id="total-amount">৳ 0</span></h3>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="clear-form" class="btn btn-secondary">সাফ করুন</button>
+                    <button type="submit" class="btn btn-primary">সংরক্ষণ করুন</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Monthly Report Page -->
+        <div id="monthly" class="page">
+            <div class="page-header">
+                <h1>মাসিক রিপোর্ট</h1>
+                <p>মাস অনুযায়ী খরচের বিবরণ</p>
+            </div>
+
+            <div class="month-selector">
+                <h3>মাস নির্বাচন করুন</h3>
+                <div class="months-grid">
+                    <button class="month-btn" data-month="1">জানুয়ারি</button>
+                    <button class="month-btn" data-month="2">ফেব্রুয়ারি</button>
+                    <button class="month-btn" data-month="3">মার্চ</button>
+                    <button class="month-btn" data-month="4">এপ্রিল</button>
+                    <button class="month-btn" data-month="5">মে</button>
+                    <button class="month-btn" data-month="6">জুন</button>
+                    <button class="month-btn" data-month="7">জুলাই</button>
+                    <button class="month-btn" data-month="8">আগস্ট</button>
+                    <button class="month-btn" data-month="9">সেপ্টেম্বর</button>
+                    <button class="month-btn" data-month="10">অক্টোবর</button>
+                    <button class="month-btn" data-month="11">নভেম্বর</button>
+                    <button class="month-btn" data-month="12">ডিসেম্বর</button>
+                </div>
+            </div>
+
+            <div id="monthly-content" class="monthly-content">
+                <div class="month-summary">
+                    <h3 id="selected-month-name">মাস নির্বাচন করুন</h3>
+                    <div class="category-breakdown">
+                        <div class="category-item">
+                            <span class="category-name">প্যাকেজিং সামগ্রী:</span>
+                            <span class="category-amount" id="packaging-total">৳ 0</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="category-name">সংরক্ষণ সামগ্রী:</span>
+                            <span class="category-amount" id="storage-total">৳ 0</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="category-name">শ্রমিক খরচ:</span>
+                            <span class="category-amount" id="labor-total">৳ 0</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="category-name">পরিবহন খরচ:</span>
+                            <span class="category-amount" id="transport-total">৳ 0</span>
+                        </div>
+                        <div class="category-item">
+                            <span class="category-name">অন্যান্য খরচ:</span>
+                            <span class="category-amount" id="other-total">৳ 0</span>
+                        </div>
+                        <div class="category-item total">
+                            <span class="category-name">মোট:</span>
+                            <span class="category-amount" id="month-total">৳ 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="monthly-table">
+                    <h4>দৈনিক বিবরণ</h4>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>তারিখ</th>
+                                    <th>বিভাগ</th>
+                                    <th>আইটেম</th>
+                                    <th>টাকা</th>
+                                    <th>অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthly-entries-body">
+                                <!-- Monthly entries will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly Summary Page -->
+        <div id="yearly" class="page">
+            <div class="page-header">
+                <h1>বাৎসরিক হিসাব</h1>
+                <p>পুরো বছরের খরচের সারসংক্ষেপ</p>
+            </div>
+
+            <div class="year-summary">
+                <div class="year-total">
+                    <h2>২০২৫ সালের মোট খরচ</h2>
+                    <div class="year-amount" id="year-total-amount">৳ 0</div>
+                </div>
+
+                <div class="yearly-category-breakdown">
+                    <h3>বিভাগ অনুযায়ী খরচ</h3>
+                    <div class="category-chart">
+                        <div class="chart-item">
+                            <div class="chart-label">প্যাকেজিং সামগ্রী</div>
+                            <div class="chart-bar">
+                                <div class="chart-fill" id="packaging-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="chart-value" id="packaging-year">৳ 0</div>
+                        </div>
+                        <div class="chart-item">
+                            <div class="chart-label">সংরক্ষণ সামগ্রী</div>
+                            <div class="chart-bar">
+                                <div class="chart-fill" id="storage-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="chart-value" id="storage-year">৳ 0</div>
+                        </div>
+                        <div class="chart-item">
+                            <div class="chart-label">শ্রমিক খরচ</div>
+                            <div class="chart-bar">
+                                <div class="chart-fill" id="labor-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="chart-value" id="labor-year">৳ 0</div>
+                        </div>
+                        <div class="chart-item">
+                            <div class="chart-label">পরিবহন খরচ</div>
+                            <div class="chart-bar">
+                                <div class="chart-fill" id="transport-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="chart-value" id="transport-year">৳ 0</div>
+                        </div>
+                        <div class="chart-item">
+                            <div class="chart-label">অন্যান্য খরচ</div>
+                            <div class="chart-bar">
+                                <div class="chart-fill" id="other-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="chart-value" id="other-year">৳ 0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="monthly-overview">
+                    <h3>মাসিক ওভারভিউ</h3>
+                    <div class="months-overview-grid">
+                        <div class="month-card">
+                            <div class="month-name">জানুয়ারি</div>
+                            <div class="month-amount" id="jan-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">ফেব্রুয়ারি</div>
+                            <div class="month-amount" id="feb-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">মার্চ</div>
+                            <div class="month-amount" id="mar-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">এপ্রিল</div>
+                            <div class="month-amount" id="apr-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">মে</div>
+                            <div class="month-amount" id="may-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">জুন</div>
+                            <div class="month-amount" id="jun-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">জুলাই</div>
+                            <div class="month-amount" id="jul-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">আগস্ট</div>
+                            <div class="month-amount" id="aug-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">সেপ্টেম্বর</div>
+                            <div class="month-amount" id="sep-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">অক্টোবর</div>
+                            <div class="month-amount" id="oct-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">নভেম্বর</div>
+                            <div class="month-amount" id="nov-amount">৳ 0</div>
+                        </div>
+                        <div class="month-card">
+                            <div class="month-name">ডিসেম্বর</div>
+                            <div class="month-amount" id="dec-amount">৳ 0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice Page -->
+        <div id="invoice" class="page">
+            <div class="page-header">
+                <h1>ইনভয়েজ তৈরি</h1>
+                <p>প্রফেশনাল ইনভয়েজ তৈরি করুন এবং অটো ক্যালকুলেশন করুন</p>
+            </div>
+
+            <div class="invoice-container">
+                <div class="invoice-header">
+                    <div class="invoice-info">
+                        <div class="form-group">
+                            <label for="invoice-date">ইনভয়েজ তারিখ</label>
+                            <input type="date" id="invoice-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="invoice-number">ইনভয়েজ নম্বর</label>
+                            <input type="text" id="invoice-number" placeholder="INV-001" readonly>
+                        </div>
+                    </div>
+                    <div class="company-info">
+                        <h3>মাছ ব্যবসা</h3>
+                        <p>ঠিকানা: ঢাকা, বাংলাদেশ</p>
+                        <p>ফোন: ০১৭০০০০০০০০</p>
+                    </div>
+                </div>
+
+                <div class="invoice-items">
+                    <div class="items-header">
+                        <h3>আইটেমের তালিকা</h3>
+                        <button type="button" id="add-item-btn" class="btn btn-secondary">
+                            <span>+</span> নতুন আইটেম যোগ করুন
+                        </button>
+                    </div>
+
+                    <div class="invoice-table-container">
+                        <table class="invoice-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">ক্রম</th>
+                                    <th style="width: 200px;">আইটেমের নাম</th>
+                                    <th style="width: 120px;">বিভাগ</th>
+                                    <th style="width: 80px;">পরিমাণ</th>
+                                    <th style="width: 100px;">একক</th>
+                                    <th style="width: 120px;">একক দাম</th>
+                                    <th style="width: 140px;">মোট দাম</th>
+                                    <th style="width: 80px;">অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoice-items-body">
+                                <!-- Invoice items will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="invoice-summary">
+                    <div class="summary-section">
+                        <h4>সারসংক্ষেপ</h4>
+                        <div class="summary-row">
+                            <span>সাবটোটাল:</span>
+                            <span id="subtotal">৳ 0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>ভ্যাট (০%):</span>
+                            <span id="vat">৳ 0</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>মোট:</span>
+                            <span id="grand-total">৳ 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="invoice-actions">
+                    <button type="button" id="clear-invoice" class="btn btn-secondary">সাফ করুন</button>
+                    <button type="button" id="preview-invoice" class="btn btn-secondary">প্রিভিউ</button>
+                    <button type="button" id="save-invoice" class="btn btn-primary">ইনভয়েজ সংরক্ষণ করুন</button>
+                </div>
+            </div>
+
+            <!-- Invoice Preview Modal -->
+            <div id="invoice-preview-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>ইনভয়েজ প্রিভিউ</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body" id="invoice-preview-content">
+                        <!-- Invoice preview will be generated here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary modal-close">বন্ধ করুন</button>
+                        <button id="print-invoice" class="btn btn-primary">প্রিন্ট করুন</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Page -->
+        <div id="export" class="page">
+            <div class="page-header">
+                <h1>ডেটা এক্সপোর্ট</h1>
+                <p>আপনার হিসাবের ডেটা এক্সপোর্ট করুন</p>
+            </div>
+
+            <div class="export-options">
+                <div class="export-card">
+                    <h3>Excel ফরম্যাটে এক্সপোর্ট</h3>
+                    <p>সব হিসাবের ডেটা Excel ফাইল আকারে ডাউনলোড করুন</p>
+                    <button id="export-excel" class="btn btn-primary">Excel এক্সপোর্ট</button>
+                </div>
+
+                <div class="export-card">
+                    <h3>PDF রিপোর্ট</h3>
+                    <p>মাসিক বা বার্ষিক রিপোর্ট PDF আকারে তৈরি করুন</p>
+                    <div class="pdf-options">
+                        <button id="export-monthly-pdf" class="btn btn-secondary">মাসিক রিপোর্ট PDF</button>
+                        <button id="export-yearly-pdf" class="btn btn-secondary">বার্ষিক রিপোর্ট PDF</button>
+                    </div>
+                </div>
+
+                <div class="export-card">
+                    <h3>CSV ফরম্যাটে এক্সপোর্ট</h3>
+                    <p>সাধারণ ডেটা ফরম্যাটে ডাউনলোড করুন</p>
+                    <button id="export-csv" class="btn btn-primary">CSV এক্সপোর্ট</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
