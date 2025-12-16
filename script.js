@@ -5,6 +5,7 @@ class MatsyaHisab {
     constructor() {
         this.expenses = this.loadExpenses();
         this.income = this.loadIncome();
+        this.customers = this.loadCustomers();
         this.currentPage = 'dashboard';
         this.editingInvoiceId = null; // Track if we're editing an invoice
         this.init();
@@ -114,6 +115,9 @@ class MatsyaHisab {
                 break;
             case 'invoices-list':
                 this.setupInvoicesListPage();
+                break;
+            case 'customers':
+                this.setupCustomersPage();
                 break;
             case 'income':
                 this.setupIncomePage();
@@ -515,6 +519,9 @@ class MatsyaHisab {
         if (!this.editingInvoiceId) {
             document.getElementById('invoice-page-title').textContent = 'ইনভয়েজ তৈরি';
             document.getElementById('invoice-page-subtitle').textContent = 'প্রফেশনাল ইনভয়েজ তৈরি করুন এবং অটো ক্যালকুলেশন করুন';
+            document.querySelector('.invoice-container').classList.remove('edit-mode');
+        } else {
+            document.querySelector('.invoice-container').classList.add('edit-mode');
         }
     }
 
@@ -704,6 +711,7 @@ class MatsyaHisab {
         // Save each item as a separate expense entry
         const invoiceId = document.getElementById('invoice-number').value;
         const date = document.getElementById('invoice-date').value;
+        const customerId = document.getElementById('invoice-customer').value;
 
         invoiceData.items.forEach(item => {
             const expense = {
@@ -713,6 +721,7 @@ class MatsyaHisab {
                 item: item.name,
                 amount: item.total,
                 quantity: item.quantity,
+                customerId: customerId,
                 unitPrice: item.unitPrice,
                 invoiceId: invoiceId
             };
@@ -756,6 +765,7 @@ class MatsyaHisab {
         return {
             date: document.getElementById('invoice-date').value,
             number: document.getElementById('invoice-number').value,
+            customerId: document.getElementById('invoice-customer').value,
             items,
             subtotal: parseFloat(document.getElementById('subtotal').textContent.replace('৳ ', '').replace(/,/g, '')),
             vat: parseFloat(document.getElementById('vat').textContent.replace('৳ ', '').replace(/,/g, '')),
@@ -1071,21 +1081,22 @@ class MatsyaHisab {
             <tr>
                 <td style="font-weight: 600; color: #00695C;">${invoice.id}</td>
                 <td>${this.formatDate(invoice.date)}</td>
+                <td>${this.getCustomerName(invoice.customerId)}</td>
                 <td style="text-align: center;">${invoice.items.length}</td>
                 <td class="invoice-amount">${this.formatCurrency(invoice.total)}</td>
                 <td>
                     <div class="invoice-actions">
-                        <button class="invoice-action-btn view" onclick="app.viewInvoice('${invoice.id}')">
-                            👁️ দেখুন
+                        <button class="invoice-action-btn view" onclick="app.viewInvoice('${invoice.id}')" title="দেখুন">
+                            👁️
                         </button>
-                        <button class="invoice-action-btn edit" onclick="app.editInvoice('${invoice.id}')">
-                            ✏️ সম্পাদনা
+                        <button class="invoice-action-btn edit" onclick="app.editInvoice('${invoice.id}')" title="সম্পাদনা">
+                            ✏️
                         </button>
-                        <button class="invoice-action-btn duplicate" onclick="app.duplicateInvoice('${invoice.id}')">
-                            📋 কপি
+                        <button class="invoice-action-btn duplicate" onclick="app.duplicateInvoice('${invoice.id}')" title="কপি করুন">
+                            📋
                         </button>
-                        <button class="invoice-action-btn delete" onclick="app.deleteInvoice('${invoice.id}')">
-                            🗑️ মুছুন
+                        <button class="invoice-action-btn delete" onclick="app.deleteInvoice('${invoice.id}')" title="মুছে ফেলুন">
+                            🗑️
                         </button>
                     </div>
                 </td>
@@ -1156,6 +1167,11 @@ class MatsyaHisab {
         // Set invoice date and number
         document.getElementById('invoice-date').value = invoiceData.date;
         document.getElementById('invoice-number').value = invoiceData.number;
+        
+        // Set customer if exists
+        if (invoiceData.customerId) {
+            document.getElementById('invoice-customer').value = invoiceData.customerId;
+        }
         
         // Clear existing rows
         document.getElementById('invoice-items-body').innerHTML = '';
@@ -1249,6 +1265,7 @@ class MatsyaHisab {
         return {
             date: invoiceExpenses[0].date,
             number: invoiceId,
+            customerId: invoiceExpenses[0].customerId,
             items,
             subtotal: total,
             vat: 0,
@@ -1271,6 +1288,7 @@ class MatsyaHisab {
         // Save each item as a separate expense entry
         const invoiceId = document.getElementById('invoice-number').value;
         const date = document.getElementById('invoice-date').value;
+        const customerId = document.getElementById('invoice-customer').value;
 
         invoiceData.items.forEach(item => {
             const expense = {
@@ -1280,6 +1298,7 @@ class MatsyaHisab {
                 item: item.name,
                 amount: item.total,
                 quantity: item.quantity,
+                customerId: customerId,
                 unitPrice: item.unitPrice,
                 invoiceId: invoiceId
             };
@@ -1302,6 +1321,12 @@ class MatsyaHisab {
         this.setCurrentDate();
         this.setupIncomeEventListeners();
         this.loadIncomeList();
+    }
+
+    setupCustomersPage() {
+        this.setupCustomerEventListeners();
+        this.loadCustomerList();
+        this.updateCustomerDropdown();
     }
 
     setupIncomeEventListeners() {
@@ -1515,6 +1540,270 @@ class MatsyaHisab {
 
     closeIncomeModal() {
         document.getElementById('edit-income-modal').style.display = 'none';
+    }
+
+    // Customer Management
+    loadCustomers() {
+        const stored = localStorage.getItem('matsyaHisabCustomers');
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    saveCustomers() {
+        localStorage.setItem('matsyaHisabCustomers', JSON.stringify(this.customers));
+    }
+
+    generateCustomerId() {
+        return 'CUS-' + Date.now().toString().slice(-6);
+    }
+
+    setupCustomerEventListeners() {
+        const customerForm = document.getElementById('customer-form');
+        if (customerForm) {
+            customerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveCustomer();
+            });
+        }
+
+        document.getElementById('clear-customer-form')?.addEventListener('click', () => {
+            this.clearCustomerForm();
+        });
+
+        document.getElementById('customer-search')?.addEventListener('input', () => {
+            this.filterCustomers();
+        });
+
+        // Edit customer modal
+        const editCustomerForm = document.getElementById('edit-customer-form');
+        if (editCustomerForm) {
+            editCustomerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.updateCustomer();
+            });
+        }
+
+        // Modal close handlers
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('edit-customer-modal').style.display = 'none';
+            });
+        });
+    }
+
+    saveCustomer() {
+        const name = document.getElementById('customer-name').value.trim();
+        const phone = document.getElementById('customer-phone').value.trim();
+        const address = document.getElementById('customer-address').value.trim();
+        const email = document.getElementById('customer-email').value.trim();
+        const notes = document.getElementById('customer-notes').value.trim();
+
+        if (!name) {
+            this.showToast('কাস্টমারের নাম আবশ্যক', 'error');
+            return;
+        }
+
+        const customer = {
+            id: this.generateCustomerId(),
+            name,
+            phone,
+            address,
+            email,
+            notes,
+            createdAt: new Date().toISOString()
+        };
+
+        this.customers.push(customer);
+        this.saveCustomers();
+        this.loadCustomerList();
+        this.updateCustomerDropdown();
+        this.clearCustomerForm();
+        this.showToast('কাস্টমার সফলভাবে যোগ করা হয়েছে', 'success');
+    }
+
+    clearCustomerForm() {
+        document.getElementById('customer-form').reset();
+    }
+
+    loadCustomerList() {
+        const tbody = document.getElementById('customer-table-body');
+        const noDataMessage = document.getElementById('no-customers-message');
+        
+        if (this.customers.length === 0) {
+            tbody.innerHTML = '';
+            noDataMessage.style.display = 'block';
+            return;
+        }
+
+        noDataMessage.style.display = 'none';
+        tbody.innerHTML = this.customers.map(customer => `
+            <tr>
+                <td style="font-weight: 600;">${customer.name}</td>
+                <td>${customer.phone || '-'}</td>
+                <td>${customer.address || '-'}</td>
+                <td>${customer.email || '-'}</td>
+                <td>
+                    <div class="customer-actions">
+                        <button class="customer-action-btn edit" onclick="app.editCustomer('${customer.id}')" title="সম্পাদনা">
+                            ✏️
+                        </button>
+                        <button class="customer-action-btn delete" onclick="app.deleteCustomer('${customer.id}')" title="মুছে ফেলুন">
+                            🗑️
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    filterCustomers() {
+        const searchTerm = document.getElementById('customer-search').value.toLowerCase();
+        const filteredCustomers = this.customers.filter(customer => 
+            customer.name.toLowerCase().includes(searchTerm) ||
+            (customer.phone && customer.phone.toLowerCase().includes(searchTerm)) ||
+            (customer.email && customer.email.toLowerCase().includes(searchTerm))
+        );
+        
+        this.displayFilteredCustomers(filteredCustomers);
+    }
+
+    displayFilteredCustomers(customers) {
+        const tbody = document.getElementById('customer-table-body');
+        const noDataMessage = document.getElementById('no-customers-message');
+        
+        if (customers.length === 0) {
+            tbody.innerHTML = '';
+            noDataMessage.style.display = 'block';
+            return;
+        }
+
+        noDataMessage.style.display = 'none';
+        tbody.innerHTML = customers.map(customer => `
+            <tr>
+                <td style="font-weight: 600;">${customer.name}</td>
+                <td>${customer.phone || '-'}</td>
+                <td>${customer.address || '-'}</td>
+                <td>${customer.email || '-'}</td>
+                <td>
+                    <div class="customer-actions">
+                        <button class="customer-action-btn edit" onclick="app.editCustomer('${customer.id}')" title="সম্পাদনা">
+                            ✏️
+                        </button>
+                        <button class="customer-action-btn delete" onclick="app.deleteCustomer('${customer.id}')" title="মুছে ফেলুন">
+                            🗑️
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    editCustomer(customerId) {
+        const customer = this.customers.find(c => c.id === customerId);
+        if (!customer) {
+            this.showToast('কাস্টমার পাওয়া যায়নি', 'error');
+            return;
+        }
+
+        document.getElementById('edit-customer-id').value = customer.id;
+        document.getElementById('edit-customer-name').value = customer.name;
+        document.getElementById('edit-customer-phone').value = customer.phone || '';
+        document.getElementById('edit-customer-address').value = customer.address || '';
+        document.getElementById('edit-customer-email').value = customer.email || '';
+        document.getElementById('edit-customer-notes').value = customer.notes || '';
+
+        document.getElementById('edit-customer-modal').style.display = 'block';
+    }
+
+    updateCustomer() {
+        const customerId = document.getElementById('edit-customer-id').value;
+        const name = document.getElementById('edit-customer-name').value.trim();
+        const phone = document.getElementById('edit-customer-phone').value.trim();
+        const address = document.getElementById('edit-customer-address').value.trim();
+        const email = document.getElementById('edit-customer-email').value.trim();
+        const notes = document.getElementById('edit-customer-notes').value.trim();
+
+        if (!name) {
+            this.showToast('কাস্টমারের নাম আবশ্যক', 'error');
+            return;
+        }
+
+        const customerIndex = this.customers.findIndex(c => c.id === customerId);
+        if (customerIndex === -1) {
+            this.showToast('কাস্টমার পাওয়া যায়নি', 'error');
+            return;
+        }
+
+        this.customers[customerIndex] = {
+            ...this.customers[customerIndex],
+            name,
+            phone,
+            address,
+            email,
+            notes,
+            updatedAt: new Date().toISOString()
+        };
+
+        this.saveCustomers();
+        this.loadCustomerList();
+        this.updateCustomerDropdown();
+        document.getElementById('edit-customer-modal').style.display = 'none';
+        this.showToast('কাস্টমার সফলভাবে আপডেট করা হয়েছে', 'success');
+    }
+
+    deleteCustomer(customerId) {
+        // Check if customer has any invoices
+        const hasInvoices = this.expenses.some(exp => exp.customerId === customerId);
+        
+        if (hasInvoices) {
+            if (!confirm('এই কাস্টমারের ইনভয়েজ রয়েছে। মুছে ফেললে ইনভয়েজ থেকে কাস্টমারের তথ্য সরিয়ে ফেলা হবে। এগিয়ে যেতে চান?')) {
+                return;
+            }
+            
+            // Remove customer reference from invoices
+            this.expenses = this.expenses.map(exp => {
+                if (exp.customerId === customerId) {
+                    return { ...exp, customerId: null };
+                }
+                return exp;
+            });
+            this.saveExpenses();
+        } else {
+            if (!confirm('এই কাস্টমার মুছে ফেলতে চান?')) {
+                return;
+            }
+        }
+
+        this.customers = this.customers.filter(c => c.id !== customerId);
+        this.saveCustomers();
+        this.loadCustomerList();
+        this.updateCustomerDropdown();
+        this.showToast('কাস্টমার মুছে ফেলা হয়েছে', 'success');
+    }
+
+    updateCustomerDropdown() {
+        const select = document.getElementById('invoice-customer');
+        if (!select) return;
+
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">কাস্টমার নির্বাচন করুন</option>';
+        
+        this.customers.forEach(customer => {
+            const option = document.createElement('option');
+            option.value = customer.id;
+            option.textContent = customer.name;
+            select.appendChild(option);
+        });
+
+        // Restore previous selection if still valid
+        if (currentValue && this.customers.some(c => c.id === currentValue)) {
+            select.value = currentValue;
+        }
+    }
+
+    getCustomerName(customerId) {
+        if (!customerId) return 'সাধারণ';
+        const customer = this.customers.find(c => c.id === customerId);
+        return customer ? customer.name : 'অজানা কাস্টমার';
     }
 
     getIncomeTypeName(type) {
