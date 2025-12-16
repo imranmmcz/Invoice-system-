@@ -515,6 +515,11 @@ class MatsyaHisab {
         this.setupInvoiceEventListeners();
         this.addInvoiceRow(); // Add first row by default
         
+        // Ensure initial totals calculation
+        setTimeout(() => {
+            this.updateInvoiceTotals();
+        }, 100);
+        
         // Reset editing state if not already editing
         if (!this.editingInvoiceId) {
             document.getElementById('invoice-page-title').textContent = 'ইনভয়েজ তৈরি';
@@ -526,32 +531,55 @@ class MatsyaHisab {
     }
 
     setupInvoiceEventListeners() {
-        document.getElementById('add-row-btn').addEventListener('click', () => {
-            this.addInvoiceRow();
-        });
+        const addRowBtn = document.getElementById('add-row-btn');
+        if (addRowBtn) {
+            addRowBtn.replaceWith(addRowBtn.cloneNode(true));
+            document.getElementById('add-row-btn').addEventListener('click', () => {
+                this.addInvoiceRow();
+            });
+        }
 
-        document.getElementById('clear-invoice').addEventListener('click', () => {
-            this.clearInvoice();
-        });
+        const clearInvoiceBtn = document.getElementById('clear-invoice');
+        if (clearInvoiceBtn) {
+            clearInvoiceBtn.replaceWith(clearInvoiceBtn.cloneNode(true));
+            document.getElementById('clear-invoice').addEventListener('click', () => {
+                this.clearInvoice();
+            });
+        }
 
-        document.getElementById('preview-invoice').addEventListener('click', () => {
-            this.previewInvoice();
-        });
+        const previewBtn = document.getElementById('preview-invoice');
+        if (previewBtn) {
+            previewBtn.replaceWith(previewBtn.cloneNode(true));
+            document.getElementById('preview-invoice').addEventListener('click', () => {
+                this.previewInvoice();
+            });
+        }
 
-        document.getElementById('save-invoice').addEventListener('click', () => {
-            this.saveInvoice();
-        });
+        const saveBtn = document.getElementById('save-invoice');
+        if (saveBtn) {
+            saveBtn.replaceWith(saveBtn.cloneNode(true));
+            document.getElementById('save-invoice').addEventListener('click', () => {
+                this.saveInvoice();
+            });
+        }
 
         // Modal close events
         document.querySelectorAll('.modal-close').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.closeModal();
+            btn.replaceWith(btn.cloneNode(true));
+            document.querySelectorAll('.modal-close').forEach(newBtn => {
+                newBtn.addEventListener('click', () => {
+                    this.closeModal();
+                });
             });
         });
 
-        document.getElementById('print-invoice').addEventListener('click', () => {
-            this.printInvoice();
-        });
+        const printBtn = document.getElementById('print-invoice');
+        if (printBtn) {
+            printBtn.replaceWith(printBtn.cloneNode(true));
+            document.getElementById('print-invoice').addEventListener('click', () => {
+                this.printInvoice();
+            });
+        }
 
         // Close modal when clicking outside
         window.addEventListener('click', (e) => {
@@ -619,8 +647,12 @@ class MatsyaHisab {
         `;
         
         tbody.appendChild(row);
-        this.setupInvoiceRowEvents(row);
-        this.updateInvoiceTotals();
+        
+        // Setup events with a small delay to ensure DOM is updated
+        setTimeout(() => {
+            this.setupInvoiceRowEvents(row);
+            this.updateInvoiceTotals();
+        }, 50);
     }
 
     removeInvoiceRow(button) {
@@ -641,20 +673,53 @@ class MatsyaHisab {
         const unitPriceInput = row.querySelector('.unit-price');
         const quantityInput = row.querySelector('.quantity');
 
-        // Calculate total when unit price or quantity changes
-        [unitPriceInput, quantityInput].forEach(input => {
-            input.addEventListener('input', () => {
+        if (unitPriceInput && quantityInput) {
+            // Remove existing listeners to prevent duplicates
+            const newUnitPriceInput = unitPriceInput.cloneNode(true);
+            const newQuantityInput = quantityInput.cloneNode(true);
+            
+            unitPriceInput.parentNode.replaceChild(newUnitPriceInput, unitPriceInput);
+            quantityInput.parentNode.replaceChild(newQuantityInput, quantityInput);
+            
+            // Add event listeners to the new inputs
+            newUnitPriceInput.addEventListener('input', () => {
                 this.calculateRowTotal(row);
             });
-        });
+            
+            newQuantityInput.addEventListener('input', () => {
+                this.calculateRowTotal(row);
+            });
+            
+            // Also add change event for better compatibility
+            newUnitPriceInput.addEventListener('change', () => {
+                this.calculateRowTotal(row);
+            });
+            
+            newQuantityInput.addEventListener('change', () => {
+                this.calculateRowTotal(row);
+            });
+        }
     }
 
     calculateRowTotal(row) {
-        const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
-        const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+        const unitPriceInput = row.querySelector('.unit-price');
+        const quantityInput = row.querySelector('.quantity');
+        
+        if (!unitPriceInput || !quantityInput) {
+            console.error('Unit price or quantity input not found');
+            return;
+        }
+        
+        const unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const quantity = parseFloat(quantityInput.value) || 0;
         const total = unitPrice * quantity;
         
-        row.querySelector('.row-total').textContent = this.formatCurrency(total);
+        const totalElement = row.querySelector('.row-total');
+        if (totalElement) {
+            totalElement.textContent = this.formatCurrency(total);
+        }
+        
+        // Update the invoice totals immediately
         this.updateInvoiceTotals();
     }
 
@@ -662,18 +727,36 @@ class MatsyaHisab {
         let subtotal = 0;
         const rows = document.querySelectorAll('#invoice-items-body tr');
         
-        rows.forEach(row => {
-            const totalText = row.querySelector('.row-total').textContent;
-            const total = parseFloat(totalText.replace('৳ ', '').replace(/,/g, '')) || 0;
-            subtotal += total;
+        console.log('Updating invoice totals, rows found:', rows.length);
+        
+        rows.forEach((row, index) => {
+            const totalElement = row.querySelector('.row-total');
+            if (totalElement) {
+                const totalText = totalElement.textContent;
+                const total = parseFloat(totalText.replace('৳ ', '').replace(/,/g, '')) || 0;
+                subtotal += total;
+                console.log(`Row ${index + 1} total:`, total);
+            } else {
+                console.error(`Row ${index + 1} total element not found`);
+            }
         });
 
         const vat = subtotal * 0; // 0% VAT for now
         const grandTotal = subtotal + vat;
 
-        document.getElementById('subtotal').textContent = this.formatCurrency(subtotal);
-        document.getElementById('vat').textContent = this.formatCurrency(vat);
-        document.getElementById('grand-total').textContent = this.formatCurrency(grandTotal);
+        console.log('Final totals:', { subtotal, vat, grandTotal });
+
+        const subtotalElement = document.getElementById('subtotal');
+        const vatElement = document.getElementById('vat');
+        const grandTotalElement = document.getElementById('grand-total');
+        
+        if (subtotalElement && vatElement && grandTotalElement) {
+            subtotalElement.textContent = this.formatCurrency(subtotal);
+            vatElement.textContent = this.formatCurrency(vat);
+            grandTotalElement.textContent = this.formatCurrency(grandTotal);
+        } else {
+            console.error('Invoice total elements not found');
+        }
     }
 
     clearInvoice() {
@@ -1324,9 +1407,14 @@ class MatsyaHisab {
     }
 
     setupCustomersPage() {
-        this.setupCustomerEventListeners();
+        // Ensure we're on the customers page
         this.loadCustomerList();
         this.updateCustomerDropdown();
+        
+        // Setup event listeners with a small delay to ensure DOM is ready
+        setTimeout(() => {
+            this.setupCustomerEventListeners();
+        }, 100);
     }
 
     setupIncomeEventListeners() {
@@ -1559,46 +1647,96 @@ class MatsyaHisab {
     setupCustomerEventListeners() {
         const customerForm = document.getElementById('customer-form');
         if (customerForm) {
-            customerForm.addEventListener('submit', (e) => {
+            // Remove any existing event listeners to prevent conflicts
+            customerForm.replaceWith(customerForm.cloneNode(true));
+            const newCustomerForm = document.getElementById('customer-form');
+            
+            newCustomerForm.addEventListener('submit', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 this.saveCustomer();
+                return false;
+            });
+            
+            // Also add click handler for submit button to be safe
+            const submitBtn = newCustomerForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.saveCustomer();
+                    return false;
+                });
+            }
+        }
+
+        const clearBtn = document.getElementById('clear-customer-form');
+        if (clearBtn) {
+            clearBtn.replaceWith(clearBtn.cloneNode(true));
+            document.getElementById('clear-customer-form').addEventListener('click', () => {
+                this.clearCustomerForm();
             });
         }
 
-        document.getElementById('clear-customer-form')?.addEventListener('click', () => {
-            this.clearCustomerForm();
-        });
-
-        document.getElementById('customer-search')?.addEventListener('input', () => {
-            this.filterCustomers();
-        });
+        const searchInput = document.getElementById('customer-search');
+        if (searchInput) {
+            searchInput.replaceWith(searchInput.cloneNode(true));
+            document.getElementById('customer-search').addEventListener('input', () => {
+                this.filterCustomers();
+            });
+        }
 
         // Edit customer modal
         const editCustomerForm = document.getElementById('edit-customer-form');
         if (editCustomerForm) {
-            editCustomerForm.addEventListener('submit', (e) => {
+            editCustomerForm.replaceWith(editCustomerForm.cloneNode(true));
+            const newEditForm = document.getElementById('edit-customer-form');
+            
+            newEditForm.addEventListener('submit', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 this.updateCustomer();
+                return false;
             });
         }
 
         // Modal close handlers
         document.querySelectorAll('.modal-close').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.getElementById('edit-customer-modal').style.display = 'none';
+            btn.replaceWith(btn.cloneNode(true));
+            document.querySelectorAll('.modal-close').forEach(newBtn => {
+                newBtn.addEventListener('click', () => {
+                    document.getElementById('edit-customer-modal').style.display = 'none';
+                });
             });
         });
     }
 
     saveCustomer() {
-        const name = document.getElementById('customer-name').value.trim();
-        const phone = document.getElementById('customer-phone').value.trim();
-        const address = document.getElementById('customer-address').value.trim();
-        const email = document.getElementById('customer-email').value.trim();
-        const notes = document.getElementById('customer-notes').value.trim();
+        console.log('saveCustomer called');
+        
+        const nameInput = document.getElementById('customer-name');
+        const phoneInput = document.getElementById('customer-phone');
+        const addressInput = document.getElementById('customer-address');
+        const emailInput = document.getElementById('customer-email');
+        const notesInput = document.getElementById('customer-notes');
+        
+        if (!nameInput || !phoneInput || !addressInput || !emailInput || !notesInput) {
+            console.error('Customer form elements not found');
+            this.showToast('ফর্ম উপাদান পাওয়া যায়নি', 'error');
+            return;
+        }
+        
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        const address = addressInput.value.trim();
+        const email = emailInput.value.trim();
+        const notes = notesInput.value.trim();
+
+        console.log('Customer data:', { name, phone, address, email, notes });
 
         if (!name) {
             this.showToast('কাস্টমারের নাম আবশ্যক', 'error');
+            nameInput.focus();
             return;
         }
 
@@ -1612,6 +1750,8 @@ class MatsyaHisab {
             createdAt: new Date().toISOString()
         };
 
+        console.log('Adding customer:', customer);
+        
         this.customers.push(customer);
         this.saveCustomers();
         this.loadCustomerList();
