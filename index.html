@@ -54,6 +54,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="#" data-page="customers" class="nav-link">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">কাস্টমার ব্যবস্থাপনা</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="#" data-page="income" class="nav-link">
                     <span class="nav-icon">💰</span>
                     <span class="nav-text">আয় ব্যবস্থাপনা</span>
@@ -513,6 +519,14 @@
                             <label for="invoice-number">ইনভয়েজ নম্বর</label>
                             <input type="text" id="invoice-number" placeholder="INV-001" readonly>
                         </div>
+                        <div class="form-group">
+                            <label for="invoice-customer">কাস্টমার নির্বাচন</label>
+                            <select id="invoice-customer" required>
+                                <option value="">কাস্টমার নির্বাচন করুন</option>
+                                <!-- Customer options will be populated dynamically -->
+                            </select>
+                            <small class="form-hint">ইনভয়েজের জন্য কাস্টমার নির্বাচন করুন</small>
+                        </div>
                     </div>
                     <div class="company-info">
                         <h3>মাছ ব্যবসা</h3>
@@ -555,7 +569,7 @@
                             <span>সাবটোটাল:</span>
                             <span id="subtotal">৳ 0</span>
                         </div>
-                        <div class="summary-row">
+                        <div class="summary-row vat-row">
                             <span>ভ্যাট (০%):</span>
                             <span id="vat">৳ 0</span>
                         </div>
@@ -628,6 +642,7 @@
                             <tr>
                                 <th style="width: 120px;">ইনভয়েজ নম্বর</th>
                                 <th style="width: 120px;">তারিখ</th>
+                                <th style="width: 150px;">কাস্টমার</th>
                                 <th style="width: 80px;">আইটেম সংখ্যা</th>
                                 <th style="width: 120px;">মোট টাকা</th>
                                 <th style="width: 200px;">অ্যাকশন</th>
@@ -642,6 +657,132 @@
                 <div id="no-invoices-message" class="no-data-message" style="display: none;">
                     <h3>কোনো ইনভয়েজ পাওয়া যায়নি</h3>
                     <p>নতুন ইনভয়েজ তৈরি করতে "ইনভয়েজ তৈরি" পেজে যান।</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Management Page -->
+        <div id="customers" class="page">
+            <div class="page-header">
+                <h1>কাস্টমার ব্যবস্থাপনা</h1>
+                <p>কাস্টমারের তথ্য পরিচালনা করুন এবং ইনভয়েজের সাথে সংযুক্ত করুন</p>
+            </div>
+
+            <div class="customers-container">
+                <!-- Add Customer Section -->
+                <div class="add-customer-section">
+                    <h3>নতুন কাস্টমার যোগ করুন</h3>
+                    <form id="customer-form" class="customer-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="customer-name">কাস্টমারের নাম</label>
+                                <input type="text" id="customer-name" placeholder="কাস্টমারের সম্পূর্ণ নাম" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="customer-phone">ফোন নম্বর</label>
+                                <input type="tel" id="customer-phone" placeholder="০১৭xxxxxxxx">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="customer-address">ঠিকানা</label>
+                                <textarea id="customer-address" rows="2" placeholder="সম্পূর্ণ ঠিকানা"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="customer-email">ইমেইল (ঐচ্ছিক)</label>
+                                <input type="email" id="customer-email" placeholder="customer@email.com">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="customer-notes">নোট (ঐচ্ছিক)</label>
+                            <textarea id="customer-notes" rows="2" placeholder="অতিরিক্ত তথ্য বা নোট..."></textarea>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" id="clear-customer-form" class="btn btn-secondary">সাফ করুন</button>
+                            <button type="submit" class="btn btn-primary">কাস্টমার যোগ করুন</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Customer List Section -->
+                <div class="customer-list-section">
+                    <div class="list-header">
+                        <h3>কাস্টমারের তালিকা</h3>
+                        <div class="search-controls">
+                            <input type="text" id="customer-search" placeholder="কাস্টমার খুঁজুন...">
+                        </div>
+                    </div>
+
+                    <div class="customer-table-container">
+                        <table class="customer-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 150px;">নাম</th>
+                                    <th style="width: 120px;">ফোন</th>
+                                    <th style="width: 200px;">ঠিকানা</th>
+                                    <th style="width: 150px;">ইমেইল</th>
+                                    <th style="width: 100px;">অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customer-table-body">
+                                <!-- Customer entries will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="no-customers-message" class="no-data-message" style="display: none;">
+                        <h3>কোনো কাস্টমার পাওয়া যায়নি</h3>
+                        <p>নতুন কাস্টমার যোগ করতে উপরের ফর্ম ব্যবহার করুন।</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Customer Modal -->
+            <div id="edit-customer-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>কাস্টমার সম্পাদনা</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="edit-customer-form">
+                            <input type="hidden" id="edit-customer-id">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-customer-name">কাস্টমারের নাম</label>
+                                    <input type="text" id="edit-customer-name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-customer-phone">ফোন নম্বর</label>
+                                    <input type="tel" id="edit-customer-phone">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-customer-address">ঠিকানা</label>
+                                    <textarea id="edit-customer-address" rows="2"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-customer-email">ইমেইল</label>
+                                    <input type="email" id="edit-customer-email">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group full-width">
+                                <label for="edit-customer-notes">নোট</label>
+                                <textarea id="edit-customer-notes" rows="2"></textarea>
+                            </div>
+                            
+                            <div class="modal-actions">
+                                <button type="button" class="btn btn-secondary modal-close">বাতিল</button>
+                                <button type="submit" class="btn btn-primary">সংরক্ষণ করুন</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
