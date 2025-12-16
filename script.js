@@ -4,7 +4,9 @@
 class MatsyaHisab {
     constructor() {
         this.expenses = this.loadExpenses();
+        this.income = this.loadIncome();
         this.currentPage = 'dashboard';
+        this.editingInvoiceId = null; // Track if we're editing an invoice
         this.init();
     }
 
@@ -23,6 +25,15 @@ class MatsyaHisab {
 
     saveExpenses() {
         localStorage.setItem('matsyaHisabExpenses', JSON.stringify(this.expenses));
+    }
+
+    loadIncome() {
+        const stored = localStorage.getItem('matsyaHisabIncome');
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    saveIncome() {
+        localStorage.setItem('matsyaHisabIncome', JSON.stringify(this.income));
     }
 
     // Event Listeners
@@ -57,6 +68,9 @@ class MatsyaHisab {
 
         // Form input calculation
         this.setupFormCalculations();
+
+        // Invoice page
+        this.setupInvoicePage();
     }
 
     // Page Management
@@ -98,6 +112,12 @@ class MatsyaHisab {
             case 'invoice':
                 this.setupInvoicePage();
                 break;
+            case 'invoices-list':
+                this.setupInvoicesListPage();
+                break;
+            case 'income':
+                this.setupIncomePage();
+                break;
         }
 
         // Close mobile menu
@@ -110,6 +130,7 @@ class MatsyaHisab {
         const currentMonth = new Date().getMonth() + 1;
         const currentYear = new Date().getFullYear();
 
+        // Calculate expenses
         const todayExpenses = this.expenses
             .filter(exp => exp.date === today)
             .reduce((sum, exp) => sum + exp.amount, 0);
@@ -121,31 +142,114 @@ class MatsyaHisab {
             })
             .reduce((sum, exp) => sum + exp.amount, 0);
 
-        const yearExpenses = this.expenses
+        const totalExpenses = this.expenses
             .filter(exp => new Date(exp.date).getFullYear() === currentYear)
             .reduce((sum, exp) => sum + exp.amount, 0);
 
+        // Calculate income
+        const todayIncome = this.income
+            .filter(inc => inc.date === today)
+            .reduce((sum, inc) => sum + inc.amount, 0);
+
+        const monthIncome = this.income
+            .filter(inc => {
+                const incDate = new Date(inc.date);
+                return incDate.getMonth() + 1 === currentMonth && incDate.getFullYear() === currentYear;
+            })
+            .reduce((sum, inc) => sum + inc.amount, 0);
+
+        const totalIncome = this.income
+            .filter(inc => new Date(inc.date).getFullYear() === currentYear)
+            .reduce((sum, inc) => sum + inc.amount, 0);
+
+        // Calculate balance
+        const currentBalance = totalIncome - totalExpenses;
+        const todayBalance = todayIncome - todayExpenses;
+        const monthBalance = monthIncome - monthExpenses;
+
         // Update dashboard cards
-        document.getElementById('today-expense').textContent = this.formatCurrency(todayExpenses);
+        document.getElementById('total-income').textContent = this.formatCurrency(totalIncome);
+        document.getElementById('total-expense').textContent = this.formatCurrency(totalExpenses);
+        document.getElementById('current-balance').textContent = this.formatCurrency(currentBalance);
         document.getElementById('month-expense').textContent = this.formatCurrency(monthExpenses);
-        document.getElementById('year-expense').textContent = this.formatCurrency(yearExpenses);
+
+        // Update financial summary
+        this.updateFinancialSummary({
+            todayIncome,
+            todayExpenses,
+            todayBalance,
+            monthIncome,
+            monthExpenses,
+            monthBalance,
+            totalIncome,
+            totalExpenses,
+            currentBalance
+        });
 
         // Update recent entries
         this.updateRecentEntries();
     }
 
+    updateFinancialSummary(data) {
+        // Update individual summary items
+        document.getElementById('today-income').textContent = this.formatCurrency(data.todayIncome);
+        document.getElementById('month-income').textContent = this.formatCurrency(data.monthIncome);
+        document.getElementById('total-income-summary').textContent = this.formatCurrency(data.totalIncome);
+
+        document.getElementById('today-expense-summary').textContent = this.formatCurrency(data.todayExpenses);
+        document.getElementById('month-expense-summary').textContent = this.formatCurrency(data.monthExpenses);
+        document.getElementById('total-expense-summary').textContent = this.formatCurrency(data.totalExpenses);
+
+        // Update balance with color coding
+        const todayBalanceEl = document.getElementById('today-balance');
+        const monthBalanceEl = document.getElementById('month-balance');
+        const currentBalanceEl = document.getElementById('current-balance-summary');
+
+        todayBalanceEl.textContent = this.formatCurrency(data.todayBalance);
+        monthBalanceEl.textContent = this.formatCurrency(data.monthBalance);
+        currentBalanceEl.textContent = this.formatCurrency(data.currentBalance);
+
+        // Apply color classes
+        todayBalanceEl.className = data.todayBalance >= 0 ? 'positive' : 'negative';
+        monthBalanceEl.className = data.monthBalance >= 0 ? 'positive' : 'negative';
+        currentBalanceEl.className = data.currentBalance >= 0 ? 'positive' : 'negative';
+    }
+
     updateRecentEntries() {
         const tbody = document.getElementById('recent-entries-body');
-        const recentExpenses = this.expenses
+        
+        // Combine income and expenses
+        const allTransactions = [
+            ...this.expenses.map(exp => ({
+                ...exp,
+                type: 'expense',
+                typeName: 'ব্যয়'
+            })),
+            ...this.income.map(inc => ({
+                ...inc,
+                type: 'income',
+                typeName: 'আয়',
+                category: inc.type,
+                item: inc.source
+            }))
+        ];
+
+        // Sort by date (newest first) and take only 10
+        const recentTransactions = allTransactions
             .sort((a, b) => new Date(b.date) - new Date(a.date))
             .slice(0, 10);
 
-        tbody.innerHTML = recentExpenses.map(exp => `
+        tbody.innerHTML = recentTransactions.map(trans => `
             <tr>
-                <td>${this.formatDate(exp.date)}</td>
-                <td>${this.getCategoryName(exp.category)}</td>
-                <td>${exp.item}</td>
-                <td class="amount">${this.formatCurrency(exp.amount)}</td>
+                <td>${this.formatDate(trans.date)}</td>
+                <td>
+                    <span class="income-type-badge ${trans.type}">${trans.typeName}</span>
+                </td>
+                <td>${this.getCategoryName(trans.category)}</td>
+                <td>${trans.item}</td>
+                <td class="amount ${trans.type === 'income' ? 'positive' : 'negative'}">
+                    ${trans.type === 'income' ? '+' : '-'}${this.formatCurrency(trans.amount)}
+                </td>
             </tr>
         `).join('');
     }
@@ -400,6 +504,357 @@ class MatsyaHisab {
         });
     }
 
+    // Invoice Functions
+    setupInvoicePage() {
+        this.generateInvoiceNumber();
+        this.setCurrentDate();
+        this.setupInvoiceEventListeners();
+        this.addInvoiceRow(); // Add first row by default
+        
+        // Reset editing state if not already editing
+        if (!this.editingInvoiceId) {
+            document.getElementById('invoice-page-title').textContent = 'ইনভয়েজ তৈরি';
+            document.getElementById('invoice-page-subtitle').textContent = 'প্রফেশনাল ইনভয়েজ তৈরি করুন এবং অটো ক্যালকুলেশন করুন';
+        }
+    }
+
+    setupInvoiceEventListeners() {
+        document.getElementById('add-row-btn').addEventListener('click', () => {
+            this.addInvoiceRow();
+        });
+
+        document.getElementById('clear-invoice').addEventListener('click', () => {
+            this.clearInvoice();
+        });
+
+        document.getElementById('preview-invoice').addEventListener('click', () => {
+            this.previewInvoice();
+        });
+
+        document.getElementById('save-invoice').addEventListener('click', () => {
+            this.saveInvoice();
+        });
+
+        // Modal close events
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.closeModal();
+            });
+        });
+
+        document.getElementById('print-invoice').addEventListener('click', () => {
+            this.printInvoice();
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('invoice-preview-modal');
+            if (e.target === modal) {
+                this.closeModal();
+            }
+        });
+    }
+
+    generateInvoiceNumber() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const count = this.expenses.filter(exp => exp.invoiceId).length + 1;
+        const invoiceNumber = `INV-${year}${month}-${String(count).padStart(3, '0')}`;
+        document.getElementById('invoice-number').value = invoiceNumber;
+    }
+
+    // Item list based on the original image
+    getAllItems() {
+        return [
+            // Packaging Materials
+            { name: 'ককশীট', category: 'packaging' },
+            { name: 'পলি', category: 'packaging' },
+            { name: 'টেপ', category: 'packaging' },
+            { name: 'মার্কার', category: 'packaging' },
+            { name: 'কলাপাতা', category: 'packaging' },
+            // Storage Materials
+            { name: 'বরফ', category: 'storage' },
+            // Labor Costs
+            { name: 'শ্রমিক', category: 'labor' },
+            { name: 'শ্রমিক যাতায়াত ভাড়া', category: 'labor' },
+            { name: 'বকশিস', category: 'labor' },
+            { name: 'শ্রমিক নাস্তা', category: 'labor' },
+            // Transportation
+            { name: 'গাড়ি ভাড়া মাছ আনা', category: 'transport' },
+            { name: 'গাড়ি ভাড়া বরফ আনা', category: 'transport' },
+            { name: 'গাড়ি ভাড়া BFT', category: 'transport' },
+            // Other
+            { name: 'অন্যান্য', category: 'other' },
+            { name: 'শেড খরচ', category: 'other' }
+        ];
+    }
+
+    addInvoiceRow() {
+        const tbody = document.getElementById('invoice-items-body');
+        const rowCount = tbody.children.length;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td style="text-align: center; font-weight: 600;">${rowCount + 1}</td>
+            <td>
+                <select class="item-select" required>
+                    <option value="">আইটেম নির্বাচন করুন</option>
+                    ${this.getAllItems().map(item => 
+                        `<option value="${item.name}|${item.category}">${item.name}</option>`
+                    ).join('')}
+                </select>
+            </td>
+            <td><input type="number" class="unit-price" min="0" step="0.01" placeholder="০.০০" required></td>
+            <td><input type="number" class="quantity" min="1" step="1" placeholder="০" required></td>
+            <td class="row-total" style="text-align: right; font-weight: 600; background: #F8FAFC;">৳ 0</td>
+            <td style="text-align: center;"><button class="remove-row-btn" onclick="app.removeInvoiceRow(this)">মুছুন</button></td>
+        `;
+        
+        tbody.appendChild(row);
+        this.setupInvoiceRowEvents(row);
+        this.updateInvoiceTotals();
+    }
+
+    removeInvoiceRow(button) {
+        const row = button.closest('tr');
+        row.remove();
+        this.renumberInvoiceRows();
+        this.updateInvoiceTotals();
+    }
+
+    renumberInvoiceRows() {
+        const rows = document.querySelectorAll('#invoice-items-body tr');
+        rows.forEach((row, index) => {
+            row.children[0].textContent = index + 1;
+        });
+    }
+
+    setupInvoiceRowEvents(row) {
+        const unitPriceInput = row.querySelector('.unit-price');
+        const quantityInput = row.querySelector('.quantity');
+
+        // Calculate total when unit price or quantity changes
+        [unitPriceInput, quantityInput].forEach(input => {
+            input.addEventListener('input', () => {
+                this.calculateRowTotal(row);
+            });
+        });
+    }
+
+    calculateRowTotal(row) {
+        const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
+        const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+        const total = unitPrice * quantity;
+        
+        row.querySelector('.row-total').textContent = this.formatCurrency(total);
+        this.updateInvoiceTotals();
+    }
+
+    updateInvoiceTotals() {
+        let subtotal = 0;
+        const rows = document.querySelectorAll('#invoice-items-body tr');
+        
+        rows.forEach(row => {
+            const totalText = row.querySelector('.row-total').textContent;
+            const total = parseFloat(totalText.replace('৳ ', '').replace(/,/g, '')) || 0;
+            subtotal += total;
+        });
+
+        const vat = subtotal * 0; // 0% VAT for now
+        const grandTotal = subtotal + vat;
+
+        document.getElementById('subtotal').textContent = this.formatCurrency(subtotal);
+        document.getElementById('vat').textContent = this.formatCurrency(vat);
+        document.getElementById('grand-total').textContent = this.formatCurrency(grandTotal);
+    }
+
+    clearInvoice() {
+        document.getElementById('invoice-items-body').innerHTML = '';
+        this.addInvoiceRow();
+        this.generateInvoiceNumber();
+        this.setCurrentDate();
+        this.updateInvoiceTotals();
+        this.editingInvoiceId = null; // Clear editing flag
+        
+        // Restore original page title
+        document.getElementById('invoice-page-title').textContent = 'ইনভয়েজ তৈরি';
+        document.getElementById('invoice-page-subtitle').textContent = 'প্রফেশনাল ইনভয়েজ তৈরি করুন এবং অটো ক্যালকুলেশন করুন';
+    }
+
+    previewInvoice() {
+        const invoiceData = this.collectInvoiceData();
+        if (invoiceData.items.length === 0) {
+            this.showToast('কমপক্ষে একটি আইটেম যোগ করুন', 'error');
+            return;
+        }
+
+        const previewContent = this.generateInvoicePreview(invoiceData);
+        document.getElementById('invoice-preview-content').innerHTML = previewContent;
+        document.getElementById('invoice-preview-modal').style.display = 'block';
+    }
+
+    saveInvoice() {
+        const invoiceData = this.collectInvoiceData();
+        if (invoiceData.items.length === 0) {
+            this.showToast('কমপক্ষে একটি আইটেম যোগ করুন', 'error');
+            return;
+        }
+
+        // Save each item as a separate expense entry
+        const invoiceId = document.getElementById('invoice-number').value;
+        const date = document.getElementById('invoice-date').value;
+
+        invoiceData.items.forEach(item => {
+            const expense = {
+                id: Date.now() + Math.random(),
+                date: date,
+                category: item.category,
+                item: item.name,
+                amount: item.total,
+                quantity: item.quantity,
+                unitPrice: item.unitPrice,
+                invoiceId: invoiceId
+            };
+            this.expenses.push(expense);
+        });
+
+        this.saveExpenses();
+        this.showToast(`ইনভয়েজ ${invoiceId} সফলভাবে সংরক্ষিত হয়েছে`, 'success');
+        this.clearInvoice();
+        this.updateDashboard();
+    }
+
+    collectInvoiceData() {
+        const items = [];
+        const rows = document.querySelectorAll('#invoice-items-body tr');
+        
+        rows.forEach(row => {
+            const itemSelect = row.querySelector('.item-select');
+            const unitPriceInput = row.querySelector('.unit-price');
+            const quantityInput = row.querySelector('.quantity');
+            
+            const itemValue = itemSelect.value;
+            if (itemValue) {
+                const [name, category] = itemValue.split('|');
+                const unitPrice = parseFloat(unitPriceInput.value) || 0;
+                const quantity = parseFloat(quantityInput.value) || 0;
+                const total = unitPrice * quantity;
+
+                if (unitPrice > 0 && quantity > 0) {
+                    items.push({
+                        name,
+                        category,
+                        unitPrice,
+                        quantity,
+                        total
+                    });
+                }
+            }
+        });
+
+        return {
+            date: document.getElementById('invoice-date').value,
+            number: document.getElementById('invoice-number').value,
+            items,
+            subtotal: parseFloat(document.getElementById('subtotal').textContent.replace('৳ ', '').replace(/,/g, '')),
+            vat: parseFloat(document.getElementById('vat').textContent.replace('৳ ', '').replace(/,/g, '')),
+            total: parseFloat(document.getElementById('grand-total').textContent.replace('৳ ', '').replace(/,/g, ''))
+        };
+    }
+
+    generateInvoicePreview(data) {
+        const itemsHtml = data.items.map(item => `
+            <tr>
+                <td style="text-align: center;">${item.name}</td>
+                <td style="text-align: center;">${this.getCategoryName(item.category)}</td>
+                <td style="text-align: center;">${item.quantity}</td>
+                <td style="text-align: right;">${this.formatCurrency(item.unitPrice)}</td>
+                <td style="text-align: right;">${this.formatCurrency(item.total)}</td>
+            </tr>
+        `).join('');
+
+        return `
+            <div class="invoice-preview">
+                <div class="invoice-preview-header">
+                    <div class="invoice-preview-company">মাছ ব্যবসা</div>
+                    <div class="invoice-preview-address">ঠিকানা: ঢাকা, বাংলাদেশ</div>
+                    <div class="invoice-preview-address">ফোন: ০১৭০০০০০০০০</div>
+                </div>
+
+                <div class="invoice-preview-invoice-info">
+                    <div>
+                        <strong>ইনভয়েজ নম্বর:</strong> ${data.number}<br>
+                        <strong>তারিখ:</strong> ${this.formatDate(data.date)}
+                    </div>
+                    <div style="text-align: right;">
+                        <strong>বিল তারিখ:</strong> ${this.formatDate(data.date)}
+                    </div>
+                </div>
+
+                <table class="invoice-preview-table">
+                    <thead>
+                        <tr>
+                            <th>আইটেম</th>
+                            <th>বিভাগ</th>
+                            <th>পরিমাণ</th>
+                            <th>একক দাম</th>
+                            <th>মোট দাম</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+
+                <div class="invoice-preview-summary">
+                    <div class="invoice-preview-summary-row">
+                        <span>সাবটোটাল:</span>
+                        <span>${this.formatCurrency(data.subtotal)}</span>
+                    </div>
+                    <div class="invoice-preview-summary-row">
+                        <span>ভ্যাট (০%):</span>
+                        <span>${this.formatCurrency(data.vat)}</span>
+                    </div>
+                    <div class="invoice-preview-summary-row total">
+                        <span>মোট:</span>
+                        <span>${this.formatCurrency(data.total)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    closeModal() {
+        document.getElementById('invoice-preview-modal').style.display = 'none';
+    }
+
+    printInvoice() {
+        const printContent = document.getElementById('invoice-preview-content').innerHTML;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>ইনভয়েজ প্রিন্ট</title>
+                    <style>
+                        body { font-family: 'Hind Siliguri', sans-serif; margin: 20px; }
+                        .invoice-preview { background: white; }
+                        .invoice-preview-table { width: 100%; border-collapse: collapse; }
+                        .invoice-preview-table th, .invoice-preview-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        .invoice-preview-table th { background: #00695C; color: white; }
+                        .invoice-preview-summary { margin-left: auto; width: 300px; }
+                        .invoice-preview-summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; }
+                        .invoice-preview-summary-row.total { font-weight: bold; font-size: 18px; color: #00695C; border-top: 2px solid #00695C; }
+                        @media print { body { margin: 0; } }
+                    </style>
+                </head>
+                <body>${printContent}</body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
     // Export Functions
     setupExportPage() {
         document.getElementById('export-excel').addEventListener('click', () => {
@@ -433,13 +888,12 @@ class MatsyaHisab {
     }
 
     convertToCSV() {
-        const headers = ['তারিখ', 'বিভাগ', 'আইটেম', 'পরিমাণ', 'একক', 'একক দাম', 'মোট টাকা', 'ইনভয়েজ নম্বর'];
+        const headers = ['তারিখ', 'বিভাগ', 'আইটেম', 'পরিমাণ', 'একক দাম', 'মোট টাকা', 'ইনভয়েজ নম্বর'];
         const rows = this.expenses.map(exp => [
             this.formatDate(exp.date),
             this.getCategoryName(exp.category),
             exp.item,
             exp.quantity || '',
-            exp.unit || '',
             exp.unitPrice ? this.formatCurrency(exp.unitPrice) : '',
             this.formatCurrency(exp.amount),
             exp.invoiceId || ''
@@ -550,208 +1004,124 @@ class MatsyaHisab {
         return this.expenses.filter(exp => exp.category === category);
     }
 
-    // Invoice Functions
-    setupInvoicePage() {
-        this.generateInvoiceNumber();
-        this.setCurrentDate();
-        this.setupInvoiceEventListeners();
-        this.addInvoiceItem(); // Add first row by default
+    // Invoices List Functions
+    setupInvoicesListPage() {
+        this.loadInvoicesList();
+        this.setupInvoicesListEvents();
     }
 
-    setupInvoiceEventListeners() {
-        document.getElementById('add-item-btn').addEventListener('click', () => {
-            this.addInvoiceItem();
-        });
-
-        document.getElementById('clear-invoice').addEventListener('click', () => {
-            this.clearInvoice();
-        });
-
-        document.getElementById('preview-invoice').addEventListener('click', () => {
-            this.previewInvoice();
-        });
-
-        document.getElementById('save-invoice').addEventListener('click', () => {
-            this.saveInvoice();
-        });
-
-        // Modal close events
-        document.querySelectorAll('.modal-close').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.closeModal();
+    setupInvoicesListEvents() {
+        // Search functionality
+        const searchInput = document.getElementById('invoice-search');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                this.filterInvoices();
             });
-        });
+        }
 
-        document.getElementById('print-invoice').addEventListener('click', () => {
-            this.printInvoice();
-        });
-
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            const modal = document.getElementById('invoice-preview-modal');
-            if (e.target === modal) {
-                this.closeModal();
-            }
-        });
-    }
-
-    generateInvoiceNumber() {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const count = this.expenses.filter(exp => exp.invoiceId).length + 1;
-        const invoiceNumber = `INV-${year}${month}-${String(count).padStart(3, '0')}`;
-        document.getElementById('invoice-number').value = invoiceNumber;
-    }
-
-    addInvoiceItem() {
-        const tbody = document.getElementById('invoice-items-body');
-        const rowCount = tbody.children.length;
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${rowCount + 1}</td>
-            <td>
-                <select class="item-category">
-                    <option value="">বিভাগ নির্বাচন করুন</option>
-                    <option value="packaging">প্যাকেজিং সামগ্রী</option>
-                    <option value="storage">সংরক্ষণ সামগ্রী</option>
-                    <option value="labor">শ্রমিক খরচ</option>
-                    <option value="transport">পরিবহন খরচ</option>
-                    <option value="other">অন্যান্য খরচ</option>
-                </select>
-                <input type="text" class="item-name" placeholder="আইটেমের নাম" style="margin-top: 8px;">
-            </td>
-            <td>
-                <select class="item-category-select">
-                    <option value="">নির্বাচন করুন</option>
-                    <option value="packaging">প্যাকেজিং সামগ্রী</option>
-                    <option value="storage">সংরক্ষণ সামগ্রী</option>
-                    <option value="labor">শ্রমিক খরচ</option>
-                    <option value="transport">পরিবহন খরচ</option>
-                    <option value="other">অন্যান্য খরচ</option>
-                </select>
-            </td>
-            <td><input type="number" class="item-quantity" min="1" step="0.01" placeholder="০"></td>
-            <td>
-                <select class="item-unit">
-                    <option value="pcs">টি</option>
-                    <option value="kg">কেজি</option>
-                    <option value="ltr">লিটার</option>
-                    <option value="day">দিন</option>
-                    <option value="trip">ট্রিপ</option>
-                    <option value="set">সেট</option>
-                </select>
-            </td>
-            <td><input type="number" class="item-price" min="0" step="0.01" placeholder="০.০০"></td>
-            <td class="item-total amount-cell">৳ 0</td>
-            <td><button class="remove-item-btn" onclick="app.removeInvoiceItem(this)">মুছুন</button></td>
-        `;
-        
-        tbody.appendChild(row);
-        this.setupInvoiceItemEvents(row);
-        this.updateInvoiceTotals();
-    }
-
-    removeInvoiceItem(button) {
-        const row = button.closest('tr');
-        row.remove();
-        this.renumberInvoiceItems();
-        this.updateInvoiceTotals();
-    }
-
-    renumberInvoiceItems() {
-        const rows = document.querySelectorAll('#invoice-items-body tr');
-        rows.forEach((row, index) => {
-            row.children[0].textContent = index + 1;
-        });
-    }
-
-    setupInvoiceItemEvents(row) {
-        const quantityInput = row.querySelector('.item-quantity');
-        const priceInput = row.querySelector('.item-price');
-        const categorySelect = row.querySelector('.item-category-select');
-        const nameInput = row.querySelector('.item-name');
-
-        // Sync category selection between dropdown and input
-        categorySelect.addEventListener('change', () => {
-            const categorySelect2 = row.querySelector('.item-category');
-            categorySelect2.value = categorySelect.value;
-        });
-
-        row.querySelector('.item-category').addEventListener('change', () => {
-            categorySelect.value = row.querySelector('.item-category').value;
-        });
-
-        // Calculate total when quantity or price changes
-        [quantityInput, priceInput].forEach(input => {
-            input.addEventListener('input', () => {
-                this.calculateRowTotal(row);
+        // Month filter
+        const monthFilter = document.getElementById('invoice-month-filter');
+        if (monthFilter) {
+            monthFilter.addEventListener('change', () => {
+                this.filterInvoices();
             });
-        });
-
-        // Auto-fill item name based on category
-        categorySelect.addEventListener('change', () => {
-            this.autoFillItemName(row);
-        });
-    }
-
-    autoFillItemName(row) {
-        const category = row.querySelector('.item-category-select').value;
-        const nameInput = row.querySelector('.item-name');
-        
-        const categoryItems = {
-            packaging: ['ককশীট', 'পলি', 'টেপ', 'মার্কার', 'কলাপাতা'],
-            storage: ['বরফ'],
-            labor: ['শ্রমিক', 'শ্রমিক যাতায়াত ভাড়া', 'বকশিস', 'শ্রমিক নাস্তা'],
-            transport: ['গাড়ি ভাড়া মাছ আনা', 'গাড়ি ভাড়া বরফ আনা', 'গাড়ি ভাড়া BFT'],
-            other: ['অন্যান্য', 'শেড খরচ']
-        };
-
-        if (categoryItems[category]) {
-            nameInput.placeholder = categoryItems[category][0] || 'আইটেমের নাম';
         }
     }
 
-    calculateRowTotal(row) {
-        const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
-        const price = parseFloat(row.querySelector('.item-price').value) || 0;
-        const total = quantity * price;
-        
-        row.querySelector('.item-total').textContent = this.formatCurrency(total);
-        this.updateInvoiceTotals();
+    loadInvoicesList() {
+        const invoiceGroups = this.groupExpensesByInvoice();
+        this.displayInvoicesList(invoiceGroups);
     }
 
-    updateInvoiceTotals() {
-        let subtotal = 0;
-        const rows = document.querySelectorAll('#invoice-items-body tr');
+    groupExpensesByInvoice() {
+        const grouped = {};
         
-        rows.forEach(row => {
-            const totalText = row.querySelector('.item-total').textContent;
-            const total = parseFloat(totalText.replace('৳ ', '').replace(/,/g, '')) || 0;
-            subtotal += total;
+        this.expenses.forEach(expense => {
+            if (expense.invoiceId) {
+                if (!grouped[expense.invoiceId]) {
+                    grouped[expense.invoiceId] = {
+                        id: expense.invoiceId,
+                        date: expense.date,
+                        items: [],
+                        total: 0
+                    };
+                }
+                grouped[expense.invoiceId].items.push(expense);
+                grouped[expense.invoiceId].total += expense.amount;
+            }
         });
 
-        const vat = subtotal * 0; // 0% VAT for now
-        const grandTotal = subtotal + vat;
-
-        document.getElementById('subtotal').textContent = this.formatCurrency(subtotal);
-        document.getElementById('vat').textContent = this.formatCurrency(vat);
-        document.getElementById('grand-total').textContent = this.formatCurrency(grandTotal);
+        // Sort by date (newest first)
+        return Object.values(grouped).sort((a, b) => new Date(b.date) - new Date(a.date));
     }
 
-    clearInvoice() {
-        document.getElementById('invoice-items-body').innerHTML = '';
-        this.addInvoiceItem();
-        this.generateInvoiceNumber();
-        this.setCurrentDate();
-        this.updateInvoiceTotals();
+    displayInvoicesList(invoices) {
+        const tbody = document.getElementById('invoices-table-body');
+        const noDataMessage = document.getElementById('no-invoices-message');
+        
+        if (invoices.length === 0) {
+            tbody.innerHTML = '';
+            noDataMessage.style.display = 'block';
+            return;
+        }
+
+        noDataMessage.style.display = 'none';
+        
+        tbody.innerHTML = invoices.map(invoice => `
+            <tr>
+                <td style="font-weight: 600; color: #00695C;">${invoice.id}</td>
+                <td>${this.formatDate(invoice.date)}</td>
+                <td style="text-align: center;">${invoice.items.length}</td>
+                <td class="invoice-amount">${this.formatCurrency(invoice.total)}</td>
+                <td>
+                    <div class="invoice-actions">
+                        <button class="invoice-action-btn view" onclick="app.viewInvoice('${invoice.id}')">
+                            👁️ দেখুন
+                        </button>
+                        <button class="invoice-action-btn edit" onclick="app.editInvoice('${invoice.id}')">
+                            ✏️ সম্পাদনা
+                        </button>
+                        <button class="invoice-action-btn duplicate" onclick="app.duplicateInvoice('${invoice.id}')">
+                            📋 কপি
+                        </button>
+                        <button class="invoice-action-btn delete" onclick="app.deleteInvoice('${invoice.id}')">
+                            🗑️ মুছুন
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
     }
 
-    previewInvoice() {
-        const invoiceData = this.collectInvoiceData();
-        if (invoiceData.items.length === 0) {
-            this.showToast('কমপক্ষে একটি আইটেম যোগ করুন', 'error');
+    filterInvoices() {
+        const searchTerm = document.getElementById('invoice-search').value.toLowerCase();
+        const selectedMonth = document.getElementById('invoice-month-filter').value;
+        
+        let invoices = this.groupExpensesByInvoice();
+        
+        // Apply search filter
+        if (searchTerm) {
+            invoices = invoices.filter(invoice => 
+                invoice.id.toLowerCase().includes(searchTerm) ||
+                this.formatDate(invoice.date).toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply month filter
+        if (selectedMonth) {
+            invoices = invoices.filter(invoice => {
+                const invoiceMonth = new Date(invoice.date).getMonth() + 1;
+                return invoiceMonth.toString() === selectedMonth;
+            });
+        }
+        
+        this.displayInvoicesList(invoices);
+    }
+
+    viewInvoice(invoiceId) {
+        const invoiceData = this.getInvoiceData(invoiceId);
+        if (!invoiceData) {
+            this.showToast('ইনভয়েজ খুঁজে পাওয়া যায়নি', 'error');
             return;
         }
 
@@ -760,7 +1130,138 @@ class MatsyaHisab {
         document.getElementById('invoice-preview-modal').style.display = 'block';
     }
 
+    editInvoice(invoiceId) {
+        const invoiceData = this.getInvoiceData(invoiceId);
+        if (!invoiceData) {
+            this.showToast('ইনভয়েজ খুঁজে পাওয়া যায়নি', 'error');
+            return;
+        }
+
+        // Pre-populate the invoice form
+        this.populateInvoiceForm(invoiceData);
+        
+        // Switch to invoice page
+        this.showPage('invoice');
+        
+        // Set flag that we're editing
+        this.editingInvoiceId = invoiceId;
+        this.showToast(`ইনভয়েজ ${invoiceId} সম্পাদনার জন্য খোলা হয়েছে`, 'info');
+    }
+
+    populateInvoiceForm(invoiceData) {
+        // Update page title to show editing mode
+        document.getElementById('invoice-page-title').textContent = 'ইনভয়েজ সম্পাদনা';
+        document.getElementById('invoice-page-subtitle').textContent = `ইনভয়েজ ${invoiceData.number} সম্পাদনা করুন`;
+        
+        // Set invoice date and number
+        document.getElementById('invoice-date').value = invoiceData.date;
+        document.getElementById('invoice-number').value = invoiceData.number;
+        
+        // Clear existing rows
+        document.getElementById('invoice-items-body').innerHTML = '';
+        
+        // Add rows with existing data
+        invoiceData.items.forEach(item => {
+            this.addInvoiceRow();
+            const lastRow = document.querySelector('#invoice-items-body tr:last-child');
+            
+            // Set item
+            const itemSelect = lastRow.querySelector('.item-select');
+            itemSelect.value = `${item.name}|${item.category}`;
+            
+            // Set unit price and quantity
+            lastRow.querySelector('.unit-price').value = item.unitPrice;
+            lastRow.querySelector('.quantity').value = item.quantity;
+            
+            // Calculate row total
+            this.calculateRowTotal(lastRow);
+        });
+        
+        // Update totals
+        this.updateInvoiceTotals();
+    }
+
+    duplicateInvoice(invoiceId) {
+        const invoiceData = this.getInvoiceData(invoiceId);
+        if (!invoiceData) {
+            this.showToast('ইনভয়েজ খুঁজে পাওয়া যায়নি', 'error');
+            return;
+        }
+
+        // Generate new invoice number
+        this.generateInvoiceNumber();
+        
+        // Pre-populate with existing data (but not save)
+        const newInvoiceData = {
+            ...invoiceData,
+            number: document.getElementById('invoice-number').value,
+            date: new Date().toISOString().split('T')[0] // Set to today
+        };
+        
+        this.populateInvoiceForm(newInvoiceData);
+        this.showPage('invoice');
+        this.showToast(`ইনভয়েজ ${invoiceId} থেকে নতুন কপি তৈরি হয়েছে`, 'success');
+    }
+
+    deleteInvoice(invoiceId) {
+        if (confirm(`ইনভয়েজ ${invoiceId} মুছে ফেলতে চান? এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।`)) {
+            // Remove all expenses with this invoice ID
+            this.expenses = this.expenses.filter(exp => exp.invoiceId !== invoiceId);
+            this.saveExpenses();
+            
+            // Refresh the list
+            this.loadInvoicesList();
+            this.updateDashboard();
+            
+            this.showToast(`ইনভয়েজ ${invoiceId} মুছে ফেলা হয়েছে`, 'success');
+        }
+    }
+
+    getInvoiceData(invoiceId) {
+        const invoiceExpenses = this.expenses.filter(exp => exp.invoiceId === invoiceId);
+        
+        if (invoiceExpenses.length === 0) {
+            return null;
+        }
+
+        // Group items by name (in case there are multiple items with same name)
+        const itemsMap = new Map();
+        invoiceExpenses.forEach(exp => {
+            const key = `${exp.item}|${exp.category}`;
+            if (itemsMap.has(key)) {
+                const existing = itemsMap.get(key);
+                existing.quantity += exp.quantity || 1;
+                existing.total += exp.amount;
+            } else {
+                itemsMap.set(key, {
+                    name: exp.item,
+                    category: exp.category,
+                    unitPrice: exp.unitPrice || 0,
+                    quantity: exp.quantity || 1,
+                    total: exp.amount
+                });
+            }
+        });
+
+        const items = Array.from(itemsMap.values());
+        const total = invoiceExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+        
+        return {
+            date: invoiceExpenses[0].date,
+            number: invoiceId,
+            items,
+            subtotal: total,
+            vat: 0,
+            total: total
+        };
+    }
+
     saveInvoice() {
+        // If we're editing an existing invoice, first remove the old one
+        if (this.editingInvoiceId) {
+            this.expenses = this.expenses.filter(exp => exp.invoiceId !== this.editingInvoiceId);
+        }
+
         const invoiceData = this.collectInvoiceData();
         if (invoiceData.items.length === 0) {
             this.showToast('কমপক্ষে একটি আইটেম যোগ করুন', 'error');
@@ -780,144 +1281,251 @@ class MatsyaHisab {
                 amount: item.total,
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
-                unit: item.unit,
                 invoiceId: invoiceId
             };
             this.expenses.push(expense);
         });
 
         this.saveExpenses();
-        this.showToast(`ইনভয়েজ ${invoiceId} সফলভাবে সংরক্ষিত হয়েছে`, 'success');
+        
+        const action = this.editingInvoiceId ? 'আপডেট' : 'সংরক্ষিত';
+        this.showToast(`ইনভয়েজ ${invoiceId} ${action} হয়েছে`, 'success');
+        
+        // Clear editing flag and form
+        this.editingInvoiceId = null;
         this.clearInvoice();
         this.updateDashboard();
     }
 
-    collectInvoiceData() {
-        const items = [];
-        const rows = document.querySelectorAll('#invoice-items-body tr');
-        
-        rows.forEach(row => {
-            const category = row.querySelector('.item-category-select').value;
-            const name = row.querySelector('.item-name').value.trim();
-            const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
-            const unit = row.querySelector('.item-unit').value;
-            const unitPrice = parseFloat(row.querySelector('.item-price').value) || 0;
-            const total = quantity * unitPrice;
+    // Income Functions
+    setupIncomePage() {
+        this.setCurrentDate();
+        this.setupIncomeEventListeners();
+        this.loadIncomeList();
+    }
 
-            if (category && name && quantity > 0 && unitPrice > 0) {
-                items.push({
-                    category,
-                    name,
-                    quantity,
-                    unit,
-                    unitPrice,
-                    total
-                });
-            }
+    setupIncomeEventListeners() {
+        // Income form submission
+        const incomeForm = document.getElementById('income-form');
+        if (incomeForm) {
+            incomeForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveIncomeEntry();
+            });
+
+            document.getElementById('clear-income-form').addEventListener('click', () => {
+                this.clearIncomeForm();
+            });
+        }
+
+        // Edit income modal
+        document.getElementById('update-income').addEventListener('click', () => {
+            this.updateIncomeEntry();
         });
 
-        return {
-            date: document.getElementById('invoice-date').value,
-            number: document.getElementById('invoice-number').value,
-            items,
-            subtotal: parseFloat(document.getElementById('subtotal').textContent.replace('৳ ', '').replace(/,/g, '')),
-            vat: parseFloat(document.getElementById('vat').textContent.replace('৳ ', '').replace(/,/g, '')),
-            total: parseFloat(document.getElementById('grand-total').textContent.replace('৳ ', '').replace(/,/g, ''))
-        };
+        // Modal close events
+        document.querySelectorAll('.modal-close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.closeIncomeModal();
+            });
+        });
+
+        // Filter events
+        const typeFilter = document.getElementById('income-type-filter');
+        const monthFilter = document.getElementById('income-month-filter');
+        
+        if (typeFilter) {
+            typeFilter.addEventListener('change', () => {
+                this.filterIncomeList();
+            });
+        }
+
+        if (monthFilter) {
+            monthFilter.addEventListener('change', () => {
+                this.filterIncomeList();
+            });
+        }
     }
 
-    generateInvoicePreview(data) {
-        const itemsHtml = data.items.map(item => `
+    setCurrentDate() {
+        const incomeDateInput = document.getElementById('income-date');
+        if (incomeDateInput) {
+            incomeDateInput.value = new Date().toISOString().split('T')[0];
+        }
+    }
+
+    saveIncomeEntry() {
+        const date = document.getElementById('income-date').value;
+        const type = document.getElementById('income-type').value;
+        const source = document.getElementById('income-source').value;
+        const amount = parseFloat(document.getElementById('income-amount').value);
+        const description = document.getElementById('income-description').value;
+
+        if (!date || !type || !source || !amount) {
+            this.showToast('সব প্রয়োজনীয় ক্ষেত্র পূরণ করুন', 'error');
+            return;
+        }
+
+        const incomeEntry = {
+            id: Date.now() + Math.random(),
+            date: date,
+            type: type,
+            source: source,
+            amount: amount,
+            description: description
+        };
+
+        this.income.push(incomeEntry);
+        this.saveIncome();
+
+        this.showToast('আয় সফলভাবে যোগ করা হয়েছে', 'success');
+        this.clearIncomeForm();
+        this.loadIncomeList();
+        this.updateDashboard();
+    }
+
+    clearIncomeForm() {
+        document.getElementById('income-form').reset();
+        this.setCurrentDate();
+    }
+
+    loadIncomeList() {
+        this.displayIncomeList(this.income);
+    }
+
+    displayIncomeList(incomeList) {
+        const tbody = document.getElementById('income-table-body');
+        const noDataMessage = document.getElementById('no-income-message');
+        
+        if (incomeList.length === 0) {
+            tbody.innerHTML = '';
+            noDataMessage.style.display = 'block';
+            return;
+        }
+
+        noDataMessage.style.display = 'none';
+        
+        tbody.innerHTML = incomeList.map(income => `
             <tr>
-                <td>${item.name}</td>
-                <td>${this.getCategoryName(item.category)}</td>
-                <td style="text-align: center;">${item.quantity}</td>
-                <td style="text-align: center;">${item.unit}</td>
-                <td style="text-align: right;">${this.formatCurrency(item.unitPrice)}</td>
-                <td style="text-align: right;">${this.formatCurrency(item.total)}</td>
+                <td>${this.formatDate(income.date)}</td>
+                <td>
+                    <span class="income-type-badge ${income.type}">${this.getIncomeTypeName(income.type)}</span>
+                </td>
+                <td>${income.source}</td>
+                <td class="income-amount">${this.formatCurrency(income.amount)}</td>
+                <td>
+                    <div class="income-actions">
+                        <button class="income-action-btn edit" onclick="app.editIncome('${income.id}')">
+                            ✏️ সম্পাদনা
+                        </button>
+                        <button class="income-action-btn delete" onclick="app.deleteIncome('${income.id}')">
+                            🗑️ মুছুন
+                        </button>
+                    </div>
+                </td>
             </tr>
         `).join('');
-
-        return `
-            <div class="invoice-preview">
-                <div class="invoice-preview-header">
-                    <div class="invoice-preview-company">মাছ ব্যবসা</div>
-                    <div class="invoice-preview-address">ঠিকানা: ঢাকা, বাংলাদেশ</div>
-                    <div class="invoice-preview-address">ফোন: ০১৭০০০০০০০০</div>
-                </div>
-
-                <div class="invoice-preview-invoice-info">
-                    <div>
-                        <strong>ইনভয়েজ নম্বর:</strong> ${data.number}<br>
-                        <strong>তারিখ:</strong> ${this.formatDate(data.date)}
-                    </div>
-                    <div style="text-align: right;">
-                        <strong>বিল তারিখ:</strong> ${this.formatDate(data.date)}
-                    </div>
-                </div>
-
-                <table class="invoice-preview-table">
-                    <thead>
-                        <tr>
-                            <th>আইটেম</th>
-                            <th>বিভাগ</th>
-                            <th>পরিমাণ</th>
-                            <th>একক</th>
-                            <th>একক দাম</th>
-                            <th>মোট দাম</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemsHtml}
-                    </tbody>
-                </table>
-
-                <div class="invoice-preview-summary">
-                    <div class="invoice-preview-summary-row">
-                        <span>সাবটোটাল:</span>
-                        <span>${this.formatCurrency(data.subtotal)}</span>
-                    </div>
-                    <div class="invoice-preview-summary-row">
-                        <span>ভ্যাট (০%):</span>
-                        <span>${this.formatCurrency(data.vat)}</span>
-                    </div>
-                    <div class="invoice-preview-summary-row total">
-                        <span>মোট:</span>
-                        <span>${this.formatCurrency(data.total)}</span>
-                    </div>
-                </div>
-            </div>
-        `;
     }
 
-    closeModal() {
-        document.getElementById('invoice-preview-modal').style.display = 'none';
+    filterIncomeList() {
+        const typeFilter = document.getElementById('income-type-filter').value;
+        const monthFilter = document.getElementById('income-month-filter').value;
+        
+        let filteredIncome = [...this.income];
+        
+        // Filter by type
+        if (typeFilter) {
+            filteredIncome = filteredIncome.filter(inc => inc.type === typeFilter);
+        }
+        
+        // Filter by month
+        if (monthFilter) {
+            const [year, month] = monthFilter.split('-');
+            filteredIncome = filteredIncome.filter(inc => {
+                const incDate = new Date(inc.date);
+                return incDate.getFullYear() === parseInt(year) && 
+                       (incDate.getMonth() + 1) === parseInt(month);
+            });
+        }
+        
+        this.displayIncomeList(filteredIncome);
     }
 
-    printInvoice() {
-        const printContent = document.getElementById('invoice-preview-content').innerHTML;
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>ইনভয়েজ প্রিন্ট</title>
-                    <style>
-                        body { font-family: 'Hind Siliguri', sans-serif; margin: 20px; }
-                        .invoice-preview { background: white; }
-                        .invoice-preview-table { width: 100%; border-collapse: collapse; }
-                        .invoice-preview-table th, .invoice-preview-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        .invoice-preview-table th { background: #00695C; color: white; }
-                        .invoice-preview-summary { margin-left: auto; width: 300px; }
-                        .invoice-preview-summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ddd; }
-                        .invoice-preview-summary-row.total { font-weight: bold; font-size: 18px; color: #00695C; border-top: 2px solid #00695C; }
-                        @media print { body { margin: 0; } }
-                    </style>
-                </head>
-                <body>${printContent}</body>
-            </html>
-        `);
-        printWindow.document.close();
-        printWindow.print();
+    editIncome(incomeId) {
+        const income = this.income.find(inc => inc.id == incomeId);
+        if (!income) {
+            this.showToast('আয় খুঁজে পাওয়া যায়নি', 'error');
+            return;
+        }
+
+        // Populate edit form
+        document.getElementById('edit-income-id').value = income.id;
+        document.getElementById('edit-income-date').value = income.date;
+        document.getElementById('edit-income-type').value = income.type;
+        document.getElementById('edit-income-source').value = income.source;
+        document.getElementById('edit-income-amount').value = income.amount;
+        document.getElementById('edit-income-description').value = income.description || '';
+
+        // Show modal
+        document.getElementById('edit-income-modal').style.display = 'block';
+    }
+
+    updateIncomeEntry() {
+        const id = document.getElementById('edit-income-id').value;
+        const date = document.getElementById('edit-income-date').value;
+        const type = document.getElementById('edit-income-type').value;
+        const source = document.getElementById('edit-income-source').value;
+        const amount = parseFloat(document.getElementById('edit-income-amount').value);
+        const description = document.getElementById('edit-income-description').value;
+
+        if (!date || !type || !source || !amount) {
+            this.showToast('সব প্রয়োজনীয় ক্ষেত্র পূরণ করুন', 'error');
+            return;
+        }
+
+        // Update income entry
+        const incomeIndex = this.income.findIndex(inc => inc.id == id);
+        if (incomeIndex !== -1) {
+            this.income[incomeIndex] = {
+                id: id,
+                date: date,
+                type: type,
+                source: source,
+                amount: amount,
+                description: description
+            };
+
+            this.saveIncome();
+            this.loadIncomeList();
+            this.updateDashboard();
+            this.closeIncomeModal();
+            this.showToast('আয় সফলভাবে আপডেট করা হয়েছে', 'success');
+        }
+    }
+
+    deleteIncome(incomeId) {
+        if (confirm('এই আয় মুছে ফেলতে চান?')) {
+            this.income = this.income.filter(inc => inc.id != incomeId);
+            this.saveIncome();
+            this.loadIncomeList();
+            this.updateDashboard();
+            this.showToast('আয় মুছে ফেলা হয়েছে', 'success');
+        }
+    }
+
+    closeIncomeModal() {
+        document.getElementById('edit-income-modal').style.display = 'none';
+    }
+
+    getIncomeTypeName(type) {
+        const typeNames = {
+            capital: 'মূলধন',
+            sales: 'বিক্রয়',
+            investment: 'বিনিয়োগ',
+            loan: 'ঋণ',
+            other: 'অন্যান্য'
+        };
+        return typeNames[type] || type;
     }
 }
 
