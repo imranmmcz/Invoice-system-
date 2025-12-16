@@ -515,10 +515,11 @@ class MatsyaHisab {
         this.setupInvoiceEventListeners();
         this.addInvoiceRow(); // Add first row by default
         
-        // Ensure initial totals calculation
+        // Ensure initial totals calculation with delay
         setTimeout(() => {
             this.updateInvoiceTotals();
-        }, 100);
+            console.log('Initial invoice totals calculated');
+        }, 200);
         
         // Reset editing state if not already editing
         if (!this.editingInvoiceId) {
@@ -710,13 +711,20 @@ class MatsyaHisab {
             return;
         }
         
-        const unitPrice = parseFloat(unitPriceInput.value) || 0;
-        const quantity = parseFloat(quantityInput.value) || 0;
+        // Parse inputs safely
+        let unitPrice = parseFloat(unitPriceInput.value) || 0;
+        let quantity = parseFloat(quantityInput.value) || 0;
+        
+        // Ensure positive values
+        unitPrice = Math.max(0, unitPrice);
+        quantity = Math.max(0, quantity);
+        
         const total = unitPrice * quantity;
         
         const totalElement = row.querySelector('.row-total');
         if (totalElement) {
             totalElement.textContent = this.formatCurrency(total);
+            console.log(`Row total calculated: ${total}`);
         }
         
         // Update the invoice totals immediately
@@ -733,9 +741,25 @@ class MatsyaHisab {
             const totalElement = row.querySelector('.row-total');
             if (totalElement) {
                 const totalText = totalElement.textContent;
-                const total = parseFloat(totalText.replace('৳ ', '').replace(/,/g, '')) || 0;
+                console.log(`Row ${index + 1} total text:`, totalText);
+                
+                // Remove currency symbol and clean the text
+                let cleanText = totalText.replace(/[৳$]/g, '').trim();
+                
+                // Convert Bengali numerals to English numerals
+                const bengaliNumerals = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+                const englishNumerals = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+                
+                bengaliNumerals.forEach((bengali, index) => {
+                    cleanText = cleanText.replace(new RegExp(bengali, 'g'), englishNumerals[index]);
+                });
+                
+                // Remove any remaining non-numeric characters except decimal point
+                cleanText = cleanText.replace(/[^\d.-]/g, '');
+                
+                const total = parseFloat(cleanText) || 0;
                 subtotal += total;
-                console.log(`Row ${index + 1} total:`, total);
+                console.log(`Row ${index + 1} parsed total:`, total, 'Clean text:', cleanText);
             } else {
                 console.error(`Row ${index + 1} total element not found`);
             }
@@ -754,8 +778,13 @@ class MatsyaHisab {
             subtotalElement.textContent = this.formatCurrency(subtotal);
             vatElement.textContent = this.formatCurrency(vat);
             grandTotalElement.textContent = this.formatCurrency(grandTotal);
+            
+            console.log('Totals updated successfully');
         } else {
             console.error('Invoice total elements not found');
+            console.log('Subtotal element:', !!subtotalElement);
+            console.log('VAT element:', !!vatElement);
+            console.log('Grand total element:', !!grandTotalElement);
         }
     }
 
@@ -772,16 +801,49 @@ class MatsyaHisab {
         document.getElementById('invoice-page-subtitle').textContent = 'প্রফেশনাল ইনভয়েজ তৈরি করুন এবং অটো ক্যালকুলেশন করুন';
     }
 
+    // Universal modal display function
+    showInvoiceModal(content) {
+        const previewContentElement = document.getElementById('invoice-preview-content');
+        const previewModalElement = document.getElementById('invoice-preview-modal');
+        
+        if (previewContentElement && previewModalElement) {
+            previewContentElement.innerHTML = content;
+            
+            // Add modal-open class to body to prevent background scrolling
+            document.body.classList.add('modal-open');
+            
+            // Force immediate display with multiple methods
+            previewModalElement.classList.add('show');
+            previewModalElement.style.display = 'flex';
+            previewModalElement.style.visibility = 'visible';
+            previewModalElement.style.opacity = '1';
+            previewModalElement.style.zIndex = '99999';
+            
+            // Force reflow to ensure display takes effect
+            previewModalElement.offsetHeight;
+            
+            console.log('Modal displayed with content');
+            return true;
+        } else {
+            console.error('Modal elements not found');
+            console.log('Content element:', !!previewContentElement);
+            console.log('Modal element:', !!previewModalElement);
+            return false;
+        }
+    }
+
     previewInvoice() {
+        console.log('previewInvoice called');
         const invoiceData = this.collectInvoiceData();
+        console.log('Invoice data:', invoiceData);
+        
         if (invoiceData.items.length === 0) {
             this.showToast('কমপক্ষে একটি আইটেম যোগ করুন', 'error');
             return;
         }
 
         const previewContent = this.generateInvoicePreview(invoiceData);
-        document.getElementById('invoice-preview-content').innerHTML = previewContent;
-        document.getElementById('invoice-preview-modal').style.display = 'block';
+        this.showInvoiceModal(previewContent);
     }
 
     saveInvoice() {
@@ -919,7 +981,19 @@ class MatsyaHisab {
     }
 
     closeModal() {
-        document.getElementById('invoice-preview-modal').style.display = 'none';
+        const modal = document.getElementById('invoice-preview-modal');
+        if (modal) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.style.visibility = 'hidden';
+            modal.style.opacity = '0';
+            modal.style.zIndex = '-1';
+            
+            // Remove modal-open class from body
+            document.body.classList.remove('modal-open');
+            
+            console.log('Modal closed');
+        }
     }
 
     printInvoice() {
@@ -1213,6 +1287,7 @@ class MatsyaHisab {
     }
 
     viewInvoice(invoiceId) {
+        console.log('viewInvoice called for invoice:', invoiceId);
         const invoiceData = this.getInvoiceData(invoiceId);
         if (!invoiceData) {
             this.showToast('ইনভয়েজ খুঁজে পাওয়া যায়নি', 'error');
@@ -1220,8 +1295,13 @@ class MatsyaHisab {
         }
 
         const previewContent = this.generateInvoicePreview(invoiceData);
-        document.getElementById('invoice-preview-content').innerHTML = previewContent;
-        document.getElementById('invoice-preview-modal').style.display = 'block';
+        const success = this.showInvoiceModal(previewContent);
+        
+        if (success) {
+            console.log('Invoice view modal opened successfully');
+        } else {
+            console.error('Failed to open invoice view modal');
+        }
     }
 
     editInvoice(invoiceId) {
