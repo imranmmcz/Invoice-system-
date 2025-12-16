@@ -1089,6 +1089,55 @@ input:focus,
     background-color: rgba(0, 0, 0, 0.5);
 }
 
+.modal.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+#invoice-preview-modal {
+    z-index: 9999 !important;
+    background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+#invoice-preview-modal.show {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Override any other z-index conflicts */
+body.modal-open {
+    overflow: hidden;
+}
+
+.modal-open #invoice-preview-modal {
+    z-index: 99999 !important;
+}
+
+/* Prevent body scrolling when modal is open */
+body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+/* Ensure modal is always on top */
+.modal, .modal.show {
+    position: fixed !important;
+}
+
+/* Modal content be clickable */
+.modal-content {
+    position: relative;
+    z-index: 10000;
+}
+
 .modal-content {
     background-color: #FFFFFF;
     margin: 5% auto;
