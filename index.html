@@ -48,6 +48,18 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="#" data-page="invoices-list" class="nav-link">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">ইনভয়েজ তালিকা</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" data-page="income" class="nav-link">
+                    <span class="nav-icon">💰</span>
+                    <span class="nav-text">আয় ব্যবস্থাপনা</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="#" data-page="export" class="nav-link">
                     <span class="nav-icon">💾</span>
                     <span class="nav-text">এক্সপোর্ট</span>
@@ -67,37 +79,103 @@
             
             <div class="dashboard-cards">
                 <div class="card">
+                    <div class="card-icon">💵</div>
+                    <div class="card-content">
+                        <h3>মোট আয়</h3>
+                        <div class="card-value" id="total-income">৳ 0</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon">💸</div>
+                    <div class="card-content">
+                        <h3>মোট ব্যয়</h3>
+                        <div class="card-value" id="total-expense">৳ 0</div>
+                    </div>
+                </div>
+                <div class="card">
                     <div class="card-icon">💰</div>
                     <div class="card-content">
-                        <h3>আজকের খরচ</h3>
-                        <div class="card-value" id="today-expense">৳ 0</div>
+                        <h3>বর্তমান ব্যালেন্স</h3>
+                        <div class="card-value" id="current-balance">৳ 0</div>
                     </div>
                 </div>
                 <div class="card">
                     <div class="card-icon">📊</div>
                     <div class="card-content">
-                        <h3>এই মাসের খরচ</h3>
+                        <h3>এই মাসের ব্যয়</h3>
                         <div class="card-value" id="month-expense">৳ 0</div>
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-icon">📈</div>
-                    <div class="card-content">
-                        <h3>বছরের মোট খরচ</h3>
-                        <div class="card-value" id="year-expense">৳ 0</div>
+            </div>
+
+            <div class="financial-summary">
+                <div class="summary-grid">
+                    <div class="summary-card income">
+                        <h3>আয় সারসংক্ষেপ</h3>
+                        <div class="summary-content">
+                            <div class="summary-item">
+                                <span>আজকের আয়:</span>
+                                <span id="today-income">৳ 0</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>এই মাসের আয়:</span>
+                                <span id="month-income">৳ 0</span>
+                            </div>
+                            <div class="summary-item total">
+                                <span>মোট আয়:</span>
+                                <span id="total-income-summary">৳ 0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card expense">
+                        <h3>ব্যয় সারসংক্ষেপ</h3>
+                        <div class="summary-content">
+                            <div class="summary-item">
+                                <span>আজকের ব্যয়:</span>
+                                <span id="today-expense-summary">৳ 0</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>এই মাসের ব্যয়:</span>
+                                <span id="month-expense-summary">৳ 0</span>
+                            </div>
+                            <div class="summary-item total">
+                                <span>মোট ব্যয়:</span>
+                                <span id="total-expense-summary">৳ 0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-card balance">
+                        <h3>ব্যালেন্স অ্যানালাইসিস</h3>
+                        <div class="summary-content">
+                            <div class="summary-item">
+                                <span>আজকের ব্যালেন্স:</span>
+                                <span id="today-balance" class="positive">৳ 0</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>এই মাসের ব্যালেন্স:</span>
+                                <span id="month-balance" class="positive">৳ 0</span>
+                            </div>
+                            <div class="summary-item total">
+                                <span>বর্তমান ব্যালেন্স:</span>
+                                <span id="current-balance-summary" class="positive">৳ 0</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="recent-entries">
-                <h2>সাম্প্রতিক এন্ট্রি</h2>
+                <h2>সাম্প্রতিক লেনদেন</h2>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>তারিখ</th>
+                                <th>ধরন</th>
                                 <th>বিভাগ</th>
-                                <th>আইটেম</th>
+                                <th>বিবরণ</th>
                                 <th>টাকা</th>
                             </tr>
                         </thead>
@@ -420,8 +498,8 @@
         <!-- Invoice Page -->
         <div id="invoice" class="page">
             <div class="page-header">
-                <h1>ইনভয়েজ তৈরি</h1>
-                <p>প্রফেশনাল ইনভয়েজ তৈরি করুন এবং অটো ক্যালকুলেশন করুন</p>
+                <h1 id="invoice-page-title">ইনভয়েজ তৈরি</h1>
+                <p id="invoice-page-subtitle">প্রফেশনাল ইনভয়েজ তৈরি করুন এবং অটো ক্যালকুলেশন করুন</p>
             </div>
 
             <div class="invoice-container">
@@ -446,27 +524,25 @@
                 <div class="invoice-items">
                     <div class="items-header">
                         <h3>আইটেমের তালিকা</h3>
-                        <button type="button" id="add-item-btn" class="btn btn-secondary">
-                            <span>+</span> নতুন আইটেম যোগ করুন
+                        <button type="button" id="add-row-btn" class="btn btn-secondary">
+                            <span>+</span> নতুন সারি যোগ করুন
                         </button>
                     </div>
 
                     <div class="invoice-table-container">
-                        <table class="invoice-table">
+                        <table class="invoice-table" id="invoice-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 40px;">ক্রম</th>
-                                    <th style="width: 200px;">আইটেমের নাম</th>
-                                    <th style="width: 120px;">বিভাগ</th>
-                                    <th style="width: 80px;">পরিমাণ</th>
-                                    <th style="width: 100px;">একক</th>
-                                    <th style="width: 120px;">একক দাম</th>
-                                    <th style="width: 140px;">মোট দাম</th>
-                                    <th style="width: 80px;">অ্যাকশন</th>
+                                    <th style="width: 60px; text-align: center;">SL</th>
+                                    <th style="width: 250px; text-align: center;">আইটেম</th>
+                                    <th style="width: 120px; text-align: center;">একটির দাম</th>
+                                    <th style="width: 100px; text-align: center;">পরিমাণ</th>
+                                    <th style="width: 140px; text-align: center;">মোট দাম</th>
+                                    <th style="width: 80px; text-align: center;">অ্যাকশন</th>
                                 </tr>
                             </thead>
                             <tbody id="invoice-items-body">
-                                <!-- Invoice items will be added here dynamically -->
+                                <!-- Invoice rows will be added here dynamically -->
                             </tbody>
                         </table>
                     </div>
@@ -510,6 +586,207 @@
                     <div class="modal-footer">
                         <button class="btn btn-secondary modal-close">বন্ধ করুন</button>
                         <button id="print-invoice" class="btn btn-primary">প্রিন্ট করুন</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoices List Page -->
+        <div id="invoices-list" class="page">
+            <div class="page-header">
+                <h1>ইনভয়েজ তালিকা</h1>
+                <p>সংরক্ষিত সব ইনভয়েজ দেখুন, সম্পাদনা বা মুছে ফেলুন</p>
+            </div>
+
+            <div class="invoices-list-container">
+                <div class="search-filter-section">
+                    <div class="search-box">
+                        <input type="text" id="invoice-search" placeholder="ইনভয়েজ নম্বর বা তারিখ দিয়ে খুঁজুন...">
+                    </div>
+                    <div class="filter-options">
+                        <select id="invoice-month-filter">
+                            <option value="">সব মাস</option>
+                            <option value="1">জানুয়ারি</option>
+                            <option value="2">ফেব্রুয়ারি</option>
+                            <option value="3">মার্চ</option>
+                            <option value="4">এপ্রিল</option>
+                            <option value="5">মে</option>
+                            <option value="6">জুন</option>
+                            <option value="7">জুলাই</option>
+                            <option value="8">আগস্ট</option>
+                            <option value="9">সেপ্টেম্বর</option>
+                            <option value="10">অক্টোবর</option>
+                            <option value="11">নভেম্বর</option>
+                            <option value="12">ডিসেম্বর</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="invoices-table-container">
+                    <table class="invoices-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">ইনভয়েজ নম্বর</th>
+                                <th style="width: 120px;">তারিখ</th>
+                                <th style="width: 80px;">আইটেম সংখ্যা</th>
+                                <th style="width: 120px;">মোট টাকা</th>
+                                <th style="width: 200px;">অ্যাকশন</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoices-table-body">
+                            <!-- Invoice list will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="no-invoices-message" class="no-data-message" style="display: none;">
+                    <h3>কোনো ইনভয়েজ পাওয়া যায়নি</h3>
+                    <p>নতুন ইনভয়েজ তৈরি করতে "ইনভয়েজ তৈরি" পেজে যান।</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Income Page -->
+        <div id="income" class="page">
+            <div class="page-header">
+                <h1>আয় ব্যবস্থাপনা</h1>
+                <p>আয় এবং মূলধন পরিচালনা করুন</p>
+            </div>
+
+            <div class="income-container">
+                <!-- Add Income Section -->
+                <div class="add-income-section">
+                    <h3>নতুন আয় যোগ করুন</h3>
+                    <form id="income-form" class="income-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="income-date">তারিখ</label>
+                                <input type="date" id="income-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="income-type">আয়ের ধরন</label>
+                                <select id="income-type" required>
+                                    <option value="">ধরন নির্বাচন করুন</option>
+                                    <option value="capital">মূলধন</option>
+                                    <option value="sales">বিক্রয়</option>
+                                    <option value="investment">বিনিয়োগ</option>
+                                    <option value="loan">ঋণ</option>
+                                    <option value="other">অন্যান্য</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="income-source">আয়ের উৎস</label>
+                                <input type="text" id="income-source" placeholder="যেমন: মাছ বিক্রয়, বিনিয়োগ, ইত্যাদি" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="income-amount">টাকার পরিমাণ</label>
+                                <input type="number" id="income-amount" min="0" step="0.01" placeholder="০.০০" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="income-description">বিবরণ (ঐচ্ছিক)</label>
+                            <textarea id="income-description" rows="3" placeholder="অতিরিক্ত তথ্য..."></textarea>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" id="clear-income-form" class="btn btn-secondary">সাফ করুন</button>
+                            <button type="submit" class="btn btn-primary">আয় যোগ করুন</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Income List Section -->
+                <div class="income-list-section">
+                    <div class="list-header">
+                        <h3>আয়ের তালিকা</h3>
+                        <div class="filter-controls">
+                            <select id="income-type-filter">
+                                <option value="">সব ধরন</option>
+                                <option value="capital">মূলধন</option>
+                                <option value="sales">বিক্রয়</option>
+                                <option value="investment">বিনিয়োগ</option>
+                                <option value="loan">ঋণ</option>
+                                <option value="other">অন্যান্য</option>
+                            </select>
+                            <input type="month" id="income-month-filter">
+                        </div>
+                    </div>
+
+                    <div class="income-table-container">
+                        <table class="income-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 120px;">তারিখ</th>
+                                    <th style="width: 120px;">ধরন</th>
+                                    <th style="width: 200px;">উৎস</th>
+                                    <th style="width: 120px;">টাকা</th>
+                                    <th style="width: 100px;">অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody id="income-table-body">
+                                <!-- Income entries will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="no-income-message" class="no-data-message" style="display: none;">
+                        <h3>কোনো আয় পাওয়া যায়নি</h3>
+                        <p>নতুন আয় যোগ করতে উপরের ফর্ম ব্যবহার করুন।</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Edit Income Modal -->
+            <div id="edit-income-modal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>আয় সম্পাদনা</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="edit-income-form">
+                            <input type="hidden" id="edit-income-id">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-income-date">তারিখ</label>
+                                    <input type="date" id="edit-income-date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-income-type">আয়ের ধরন</label>
+                                    <select id="edit-income-type" required>
+                                        <option value="capital">মূলধন</option>
+                                        <option value="sales">বিক্রয়</option>
+                                        <option value="investment">বিনিয়োগ</option>
+                                        <option value="loan">ঋণ</option>
+                                        <option value="other">অন্যান্য</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-income-source">আয়ের উৎস</label>
+                                    <input type="text" id="edit-income-source" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit-income-amount">টাকার পরিমাণ</label>
+                                    <input type="number" id="edit-income-amount" min="0" step="0.01" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group full-width">
+                                <label for="edit-income-description">বিবরণ</label>
+                                <textarea id="edit-income-description" rows="3"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary modal-close">বাতিল</button>
+                        <button id="update-income" class="btn btn-primary">আপডেট করুন</button>
                     </div>
                 </div>
             </div>
