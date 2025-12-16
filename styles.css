@@ -857,6 +857,26 @@ input:focus,
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
     max-width: 1200px;
     margin: 0 auto;
+    position: relative;
+}
+
+.invoice-container.edit-mode {
+    border-left: 4px solid #F59E0B;
+    background: linear-gradient(135deg, #FFFBEB 0%, #FFFFFF 100%);
+}
+
+.invoice-container.edit-mode::before {
+    content: "✏️ সম্পাদনা মোড";
+    position: absolute;
+    top: -8px;
+    right: 16px;
+    background: #F59E0B;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .invoice-header {
@@ -1029,6 +1049,13 @@ input:focus,
     border-bottom: none;
 }
 
+.summary-row.vat-row {
+    background: #F8FAFC;
+    padding: 8px 16px;
+    margin: 4px -16px;
+    border-radius: 4px;
+}
+
 .summary-row.total {
     font-weight: 700;
     font-size: 18px;
@@ -1036,6 +1063,10 @@ input:focus,
     padding-top: 12px;
     margin-top: 8px;
     border-top: 2px solid #00695C;
+    background: #E0F2F1;
+    margin: 8px -16px -16px;
+    padding: 12px 16px 16px;
+    border-radius: 0 0 8px 8px;
 }
 
 .invoice-actions {
@@ -1359,23 +1390,30 @@ input:focus,
 
 .invoice-actions {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    padding: 4px 0;
+    border-top: 1px solid #E2E8F0;
 }
 
 .invoice-action-btn {
-    padding: 8px 16px;
+    width: 36px;
+    height: 36px;
     border: none;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
+    border-radius: 8px;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease-in-out;
-    font-family: 'Hind Siliguri', sans-serif;
-    text-decoration: none;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .invoice-action-btn.view {
@@ -1407,6 +1445,29 @@ input:focus,
 
 .invoice-action-btn.duplicate {
     background: #E0F2F1;
+    color: #00695C;
+}
+
+.invoice-action-btn.duplicate:hover {
+    background: #B2DFDB;
+}
+
+/* Tooltip for buttons */
+.invoice-action-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 1000;
+    margin-bottom: 4px;
+}
     color: #00695C;
 }
 
@@ -1836,18 +1897,210 @@ input:focus,
     
     .invoice-actions,
     .income-actions {
-        flex-direction: column;
-        gap: 4px;
+        flex-direction: row;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
     }
     
     .invoice-action-btn,
     .income-action-btn {
-        font-size: 11px;
-        padding: 6px 12px;
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
     }
     
     .edit-invoice-modal .modal-content {
         width: 98%;
         margin: 1% auto;
+    }
+}
+
+/* Customer Management Styles */
+.customers-container {
+    background: #FFFFFF;
+    border-radius: 8px;
+    padding: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.add-customer-section {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #E2E8F0;
+}
+
+.customer-form {
+    margin-top: 20px;
+}
+
+.search-controls {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.search-controls input {
+    padding: 8px 16px;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 300px;
+}
+
+.customer-table-container {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+
+.customer-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.customer-table th {
+    background: #00695C;
+    color: white;
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    font-family: 'Hind Siliguri', sans-serif;
+}
+
+.customer-table td {
+    padding: 16px;
+    border-bottom: 1px solid #E2E8F0;
+    vertical-align: top;
+}
+
+.customer-table tr:last-child td {
+    border-bottom: none;
+}
+
+.customer-table tr:hover {
+    background: #F8FAFC;
+}
+
+.customer-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.customer-action-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.customer-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.customer-action-btn.edit {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.customer-action-btn.edit:hover {
+    background: #FDE68A;
+}
+
+.customer-action-btn.delete {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+.customer-action-btn.delete:hover {
+    background: #FECACA;
+}
+
+/* Invoice Customer Selection */
+#invoice-customer {
+    padding: 12px;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.2s ease;
+}
+
+#invoice-customer:focus {
+    outline: none;
+    border-color: #00695C;
+    box-shadow: 0 0 0 3px rgba(0, 105, 92, 0.1);
+}
+
+.form-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6B7280;
+    font-style: italic;
+}
+
+/* Customer Modal Styles */
+#edit-customer-modal .modal-content {
+    max-width: 600px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #E2E8F0;
+}
+
+/* Responsive Design for Customer Management */
+@media (max-width: 768px) {
+    .customers-container {
+        padding: 20px;
+    }
+    
+    .search-controls {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .search-controls input {
+        width: 100%;
+    }
+    
+    .customer-table th,
+    .customer-table td {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+    
+    .customer-actions {
+        flex-direction: row;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .customer-action-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
     }
 }
